@@ -241,6 +241,14 @@ def build(
 
     copy_verified(dashboard_root / "index.html", output_root / "index.html")
     copy_verified(plotly_js, output_root / "assets" / "vendor" / "plotly.min.js")
+    module_member_root = dashboard_root / "module-members"
+    module_member_files: list[Path] = []
+    if module_member_root.is_dir():
+        for source in module_member_root.rglob("*"):
+            if source.is_file():
+                target = output_root / source.relative_to(dashboard_root)
+                copy_verified(source, target)
+                module_member_files.append(target)
 
     artifact_sources: dict[str, tuple[Path, Path, str]] = {}
     file_sources: dict[str, tuple[Path, Path]] = {}
@@ -366,6 +374,7 @@ def build(
         "unique_artifacts": len(artifact_sources),
         "file_references": sum(len(record.get("files", [])) for record in release_records),
         "unique_files": len(file_sources),
+        "module_member_files": len(module_member_files),
         "lossless_webp_sources": len(image_pairs),
         "lossless_webp_files": len(unique_image_targets),
         "lossless_webp_converted_this_run": len(image_results),

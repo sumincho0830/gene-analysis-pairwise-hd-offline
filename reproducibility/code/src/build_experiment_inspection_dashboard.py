@@ -11,10 +11,12 @@ from __future__ import annotations
 import argparse
 import csv
 from datetime import datetime, timezone
+import gzip
 import hashlib
 import json
 from pathlib import Path
 import shutil
+import statistics
 from typing import Any
 
 
@@ -1239,6 +1241,159 @@ def validate_records(records: list[dict[str, Any]], dashboard_root: Path) -> Non
         )
 
 
+def _truthy(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y"}
+
+
+def _open_csv(path: Path):
+    if path.suffix.lower() == ".gz":
+        return gzip.open(path, "rt", encoding="utf-8-sig", newline="")
+    return path.open("r", encoding="utf-8-sig", newline="")
+
+
+def build_module_member_shards(
+    records: list[dict[str, Any]], dashboard_root: Path
+) -> dict[str, Any]:
+    """Build lazy, file:// compatible module-member data for the explorer.
+
+    Each module is a separate JavaScript shard.  The browser therefore loads
+    only the selected module rather than every feature across every network.
+    Values come directly from the official CalculateSignedKME output; missing
+    kME values remain JSON null instead of being converted to zero.
+    """
+
+    member_root = dashboard_root / "module-members"
+    shard_root = member_root / "shards"
+    shard_root.mkdir(parents=True, exist_ok=True)
+    index: dict[str, Any] = {
+        "schema_version": "1.0",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "records": {},
+    }
+    expected_shards: set[Path] = set()
+    total_rows = 0
+
+    for record in records:
+        kme_file = next(
+            (item for item in record.get("files", []) if item.get("id") == "official_kme"),
+            None,
+        )
+        if not kme_file:
+            continue
+        source_path = (dashboard_root / kme_file["path"]).resolve()
+        if not source_path.exists():
+            continue
+
+        grouped: dict[str, list[list[Any]]] = {}
+        with _open_csv(source_path) as handle:
+            for row in csv.DictReader(handle):
+                module_color = (
+                    row.get("module_color")
+                    or row.get("dynamic_color")
+                    or "unassigned"
+                ).strip()
+                raw_unassigned = _truthy(row.get("is_raw_unassigned"))
+                signed_kme = parse_number(row.get("official_assigned_signed_kME"))
+                if signed_kme is None and not raw_unassigned:
+                    signed_kme = parse_number(row.get("official_module_kME"))
+                abs_kme = (
+                    None
+                    if raw_unassigned
+                    else parse_number(row.get("official_assigned_abs_kME"))
+                )
+                if abs_kme is None and signed_kme is not None:
+                    abs_kme = abs(float(signed_kme))
+                rank = None if raw_unassigned else parse_number(row.get("hub_rank_within_module"))
+                grouped.setdefault(module_color, []).append(
+                    [
+                        row.get("feature_id") or row.get("gene_id") or row.get("PROBEID") or "",
+                        row.get("gene_id") or "",
+                        row.get("SYMBOL") or "",
+                        row.get("PROBEID") or "",
+                        row.get("UNIPROT") or "",
+                        signed_kme,
+                        abs_kme,
+                        rank,
+                        raw_unassigned,
+                    ]
+                )
+
+        module_index: dict[str, Any] = {}
+        for module_color, rows in sorted(grouped.items()):
+            rows.sort(
+                key=lambda row: (
+                    row[7] is None,
+                    row[7] if row[7] is not None else float("inf"),
+                    -(row[6] if row[6] is not None else -1),
+                    str(row[0]),
+                )
+            )
+            key = f"{record['id']}::{module_color}"
+            filename = hashlib.sha256(key.encode("utf-8")).hexdigest()[:24] + ".js"
+            shard_path = shard_root / filename
+            payload = {
+                "columns": [
+                    "feature_id",
+                    "gene_id",
+                    "symbol",
+                    "probe_id",
+                    "uniprot",
+                    "signed_kme",
+                    "abs_kme",
+                    "hub_rank",
+                    "is_raw_unassigned",
+                ],
+                "rows": rows,
+            }
+            shard_path.write_text(
+                "window.MODULE_MEMBER_SHARDS=window.MODULE_MEMBER_SHARDS||{};"
+                f"window.MODULE_MEMBER_SHARDS[{json.dumps(key, ensure_ascii=False)}]="
+                + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+                + ";\n",
+                encoding="utf-8",
+            )
+            expected_shards.add(shard_path.resolve())
+            abs_values = [float(row[6]) for row in rows if row[6] is not None]
+            raw_unassigned = sum(bool(row[8]) for row in rows)
+            module_index[module_color] = {
+                "path": f"module-members/shards/{filename}",
+                "count": len(rows),
+                "assigned_kme_count": len(abs_values),
+                "raw_unassigned_count": raw_unassigned,
+                "fully_raw_unassigned": raw_unassigned == len(rows),
+                "median_abs_kme": statistics.median(abs_values) if abs_values else None,
+                "max_abs_kme": max(abs_values) if abs_values else None,
+            }
+            total_rows += len(rows)
+
+        index["records"][record["id"]] = {
+            "title": record.get("title"),
+            "source_id": record.get("source_id"),
+            "network_id": record.get("provenance", {}).get("network_id"),
+            "source_path": kme_file["path"],
+            "total_features": sum(item["count"] for item in module_index.values()),
+            "modules": module_index,
+        }
+
+    for stale in shard_root.glob("*.js"):
+        if stale.resolve() not in expected_shards:
+            stale.unlink()
+
+    index_path = member_root / "module-member-index.js"
+    index_path.write_text(
+        "window.MODULE_MEMBER_INDEX="
+        + json.dumps(index, ensure_ascii=False, separators=(",", ":"))
+        + ";\n",
+        encoding="utf-8",
+    )
+    return {
+        "records": len(index["records"]),
+        "modules": len(expected_shards),
+        "features": total_rows,
+        "index_path": index_path,
+    }
+
+
 def build(run_root: Path) -> None:
     dashboard_root = run_root / "dashboard"
     dashboard_root.mkdir(parents=True, exist_ok=True)
@@ -1252,12 +1407,19 @@ def build(run_root: Path) -> None:
     sources = [transcriptomics_source, proteomics_source]
     records = [*transcriptomics_records, *proteomics_records]
     validate_records(records, dashboard_root)
+    module_members = build_module_member_shards(records, dashboard_root)
     bundle = {
         "schema_version": SCHEMA_VERSION,
         "generated_at_utc": generated_at,
         "run_root": run_root.as_posix(),
         "sources": sources,
         "records": records,
+        "module_member_explorer": {
+            "records": module_members["records"],
+            "modules": module_members["modules"],
+            "features": module_members["features"],
+            "index": "module-members/module-member-index.js",
+        },
     }
     data_path = dashboard_root / "dashboard-data.js"
     data_path.write_text(
@@ -1275,7 +1437,17 @@ def build(run_root: Path) -> None:
         "['Common omics genes',fmt(r.metrics.cross_omics_common_genes)],['Max weighted Jaccard',fmt(r.metrics.cross_omics_max_similarity,3)],['Median best match',fmt(r.metrics.cross_omics_median_best_similarity,3)],['Reciprocal pairs',fmt(r.metrics.cross_omics_reciprocal_pairs)],['Samples cut',fmt(r.metrics.samples_removed_by_cut)]",
     ).replace(
         "</style>",
-        DESIGN_SYSTEM_CSS + "\n</style>",
+        DESIGN_SYSTEM_CSS + "\n" + MODULE_EXPLORER_CSS + "\n</style>",
+        1,
+    ).replace(
+        '<script src="dashboard-data.js"></script>',
+        MODULE_EXPLORER_HTML
+        + '\n<script src="module-members/module-member-index.js"></script>'
+        + '\n<script src="dashboard-data.js"></script>',
+        1,
+    ).replace(
+        "</body>",
+        "<script>\n" + MODULE_EXPLORER_JS + "\n</script>\n</body>",
         1,
     )
     html_path.write_text(dashboard_html, encoding="utf-8")
@@ -1318,12 +1490,49 @@ record/artifact/file/provenance schema를 반환하게 한다. UI는 수정하�
 """,
         encoding="utf-8",
     )
+    explorer_readme_path = dashboard_root / "MODULE_EXPLORER.md"
+    explorer_readme_path.write_text(
+        f"""# Module Explorer
+
+`index.html`의 `Modules & kME` 버튼 또는 Individual run의 module table 행을 누르면
+우측 Module Explorer가 열린다. 별도 web server 없이 `file://`에서 동작한다.
+
+- indexed records: {module_members['records']}
+- module shards: {module_members['modules']}
+- indexed features: {module_members['features']}
+- source: 각 record의 공식 `feature_module_kme.csv.gz`
+- default order: `hub_rank_within_module` 오름차순
+- shown values: signed kME, absolute kME, hub rank, feature/gene/protein identifiers
+- raw-unassigned: 목록에는 유지하되 kME와 rank는 `NA`
+
+검색, 정렬, 페이지 이동, 현재 검색 결과 CSV export를 지원한다. kME는 module membership
+지표이며 통계적 유의성이나 질병 연관성의 p-value가 아니다.
+
+재생성:
+
+```powershell
+python results_20261119/code/src/build_experiment_inspection_dashboard.py --run-root results_20261119
+```
+""",
+        encoding="utf-8",
+    )
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "generated_at_utc": generated_at,
         "records": len(records),
         "sources": sources,
-        "outputs": [html_path.name, data_path.name, readme_path.name],
+        "outputs": [
+            html_path.name,
+            data_path.name,
+            readme_path.name,
+            explorer_readme_path.name,
+            module_members["index_path"].relative_to(dashboard_root).as_posix(),
+        ],
+        "module_member_explorer": {
+            "records": module_members["records"],
+            "modules": module_members["modules"],
+            "features": module_members["features"],
+        },
         "builder": {
             "path": Path(__file__).resolve().as_posix(),
             "sha256": sha256(Path(__file__).resolve()),
@@ -1344,6 +1553,189 @@ def parse_args() -> argparse.Namespace:
         default=Path(__file__).resolve().parents[2],
     )
     return parser.parse_args()
+
+
+MODULE_EXPLORER_CSS = r"""
+.module-explorer-overlay[hidden] { display: none; }
+.module-explorer-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(20, 20, 20, .38);
+  display: flex; justify-content: flex-end;
+}
+.module-explorer {
+  width: min(1040px, 96vw); height: 100vh; overflow: auto;
+  background: var(--surface); border-left: 1px solid var(--line-strong);
+  box-shadow: -12px 0 36px rgba(0,0,0,.12); padding: 24px 28px 40px;
+}
+.module-explorer-head { display: flex; gap: 20px; align-items: flex-start; border-bottom: 1px solid var(--line); padding-bottom: 15px; }
+.module-explorer-head h2 { margin: 0 0 3px; font-size: 23px; }
+.module-explorer-head button { margin-left: auto; padding: 7px 12px; }
+.module-explorer-controls { display: grid; grid-template-columns: minmax(190px,.8fr) minmax(220px,1fr) minmax(160px,.7fr) auto; gap: 8px; margin: 16px 0 10px; }
+.module-explorer-controls select, .module-explorer-controls input, .module-explorer-controls button { min-width: 0; padding: 8px 9px; }
+.module-explorer-summary { display: flex; flex-wrap: wrap; gap: 7px 16px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); font-size: 13px; }
+.module-explorer-note { color: var(--text-muted); font-size: 12px; margin: 9px 0 13px; }
+.module-member-table { max-height: calc(100vh - 330px); }
+.module-member-table tr.raw-unassigned { background: #faf7f1; }
+.module-member-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.module-member-table button { border: 0; border-bottom: 1px solid var(--line-strong); background: transparent; padding: 0; }
+.raw-badge { display: inline-block; padding: 1px 5px; border: 1px solid #c9a77c; color: #77532d; font-size: 10px; white-space: nowrap; }
+.module-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.module-pagination button { padding: 5px 9px; }
+.module-open-button { margin-left: 7px; padding: 4px 7px !important; font-size: 12px; }
+.module-row { cursor: pointer; }
+.module-row:hover { background: var(--hover); }
+body.module-explorer-open { overflow: hidden; }
+.artifact-stage-tabs {
+  display: flex; flex-wrap: wrap; gap: 0; margin: 14px 0 9px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.artifact-stage-tabs button {
+  border: 0; border-bottom: 3px solid transparent; background: transparent;
+  padding: 9px 15px 8px; color: var(--text-secondary); font-weight: 600;
+}
+.artifact-stage-tabs button:hover { background: var(--hover); color: var(--text); }
+.artifact-stage-tabs button.active {
+  color: var(--text); border-bottom-color: var(--text); background: var(--selected);
+}
+.artifact-tabs[data-stage-grouped="true"] {
+  margin-top: 0; padding: 4px 0 9px; border-bottom: 1px solid var(--line-subtle);
+}
+.artifact-tabs[data-stage-grouped="true"] button { font-size: 13px; }
+@media(max-width:760px) {
+  .module-explorer { width: 100vw; padding: 18px 15px 32px; }
+  .module-explorer-controls { grid-template-columns: 1fr; }
+  .module-member-table { max-height: calc(100vh - 480px); }
+  .artifact-stage-tabs button { flex: 1 1 50%; padding-inline: 8px; }
+}
+"""
+
+
+MODULE_EXPLORER_HTML = r'''
+<div class="module-explorer-overlay" id="moduleExplorerOverlay" hidden>
+  <aside class="module-explorer" role="dialog" aria-modal="true" aria-labelledby="moduleExplorerTitle">
+    <div class="module-explorer-head">
+      <div><h2 id="moduleExplorerTitle">Module Explorer</h2><div class="sub" id="moduleExplorerRecord"></div></div>
+      <button type="button" id="moduleExplorerClose">Close</button>
+    </div>
+    <div class="module-explorer-controls">
+      <select id="moduleExplorerModule" aria-label="Module"></select>
+      <input id="moduleExplorerSearch" type="search" placeholder="Search feature, gene, PROBEID, UniProt">
+      <select id="moduleExplorerSort" aria-label="Sort members">
+        <option value="rank">Hub rank (ascending)</option>
+        <option value="abs_desc">|kME| (descending)</option>
+        <option value="signed_desc">Signed kME (descending)</option>
+        <option value="feature">Feature ID (A-Z)</option>
+      </select>
+      <button type="button" id="moduleExplorerExport">Export CSV</button>
+    </div>
+    <div class="module-explorer-summary" id="moduleExplorerSummary"></div>
+    <div class="module-explorer-note">kME is within-network module-membership evidence, not a p-value or disease association. Raw-unassigned features remain visible but their undefined kME and rank are shown as NA.</div>
+    <div class="table-wrap module-member-table">
+      <table><thead><tr><th>Hub rank</th><th>Feature ID</th><th>Gene ID</th><th>Symbol</th><th>PROBEID</th><th>UniProt</th><th>Signed kME</th><th>|kME|</th><th>Status</th></tr></thead><tbody id="moduleExplorerRows"></tbody></table>
+    </div>
+    <div class="module-pagination"><button type="button" id="moduleExplorerPrev">Previous</button><span id="moduleExplorerPage"></span><button type="button" id="moduleExplorerNext">Next</button></div>
+  </aside>
+</div>
+'''
+
+
+MODULE_EXPLORER_JS = r'''
+const moduleMemberRecords=(window.MODULE_MEMBER_INDEX&&window.MODULE_MEMBER_INDEX.records)||{};
+const moduleExplorerState={recordId:null,moduleColor:null,payload:null,query:'',sort:'rank',page:1,pageSize:100,loadingToken:0};
+const moduleShardPromises=new Map();
+function moduleEntry(recordId){return moduleMemberRecords[recordId]||null}
+function moduleKey(recordId,moduleColor){return `${recordId}::${moduleColor}`}
+function moduleDefaultColor(entry){
+  const modules=Object.entries(entry?.modules||{}).sort((a,b)=>Number(a[1].fully_raw_unassigned)-Number(b[1].fully_raw_unassigned)||b[1].count-a[1].count||a[0].localeCompare(b[0]));
+  return modules[0]?.[0]||null;
+}
+function loadModuleShard(recordId,moduleColor){
+  const entry=moduleEntry(recordId),meta=entry?.modules?.[moduleColor],key=moduleKey(recordId,moduleColor);
+  if(!meta)return Promise.reject(new Error('Module is not indexed'));
+  if(window.MODULE_MEMBER_SHARDS?.[key])return Promise.resolve(window.MODULE_MEMBER_SHARDS[key]);
+  if(moduleShardPromises.has(key))return moduleShardPromises.get(key);
+  const promise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=meta.path;script.onload=()=>window.MODULE_MEMBER_SHARDS?.[key]?resolve(window.MODULE_MEMBER_SHARDS[key]):reject(new Error('Module shard did not register'));script.onerror=()=>reject(new Error(`Could not load ${meta.path}`));document.head.appendChild(script)});
+  moduleShardPromises.set(key,promise);return promise;
+}
+function moduleNumber(v,d=3){return v===null||v===undefined||v===''?'NA':Number(v).toLocaleString(undefined,{maximumFractionDigits:d})}
+function moduleFilteredRows(){
+  if(!moduleExplorerState.payload)return [];
+  const q=moduleExplorerState.query.trim().toLowerCase();let rows=moduleExplorerState.payload.rows.filter(r=>!q||r.slice(0,5).some(v=>String(v||'').toLowerCase().includes(q)));
+  rows=[...rows];const nullLast=(v,fallback)=>v===null||v===undefined?fallback:Number(v);
+  if(moduleExplorerState.sort==='rank')rows.sort((a,b)=>nullLast(a[7],Infinity)-nullLast(b[7],Infinity)||nullLast(b[6],-Infinity)-nullLast(a[6],-Infinity)||String(a[0]).localeCompare(String(b[0])));
+  else if(moduleExplorerState.sort==='abs_desc')rows.sort((a,b)=>nullLast(b[6],-Infinity)-nullLast(a[6],-Infinity)||String(a[0]).localeCompare(String(b[0])));
+  else if(moduleExplorerState.sort==='signed_desc')rows.sort((a,b)=>nullLast(b[5],-Infinity)-nullLast(a[5],-Infinity)||String(a[0]).localeCompare(String(b[0])));
+  else rows.sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
+  return rows;
+}
+function renderModuleExplorer(){
+  const entry=moduleEntry(moduleExplorerState.recordId),meta=entry?.modules?.[moduleExplorerState.moduleColor];if(!entry||!meta)return;
+  document.getElementById('moduleExplorerRecord').textContent=`${entry.title||moduleExplorerState.recordId} · ${entry.network_id||''}`;
+  const select=document.getElementById('moduleExplorerModule');select.innerHTML=Object.entries(entry.modules).sort((a,b)=>Number(a[1].fully_raw_unassigned)-Number(b[1].fully_raw_unassigned)||b[1].count-a[1].count||a[0].localeCompare(b[0])).map(([color,m])=>`<option value="${esc(color)}" ${color===moduleExplorerState.moduleColor?'selected':''}>${esc(color)} · ${m.count.toLocaleString()} features${m.fully_raw_unassigned?' · raw-unassigned':''}</option>`).join('');
+  const rows=moduleFilteredRows(),pages=Math.max(1,Math.ceil(rows.length/moduleExplorerState.pageSize));moduleExplorerState.page=Math.min(Math.max(1,moduleExplorerState.page),pages);const start=(moduleExplorerState.page-1)*moduleExplorerState.pageSize,shown=rows.slice(start,start+moduleExplorerState.pageSize);
+  document.getElementById('moduleExplorerSummary').innerHTML=`<span><span class="swatch" style="background:${esc(moduleExplorerState.moduleColor)}"></span><b>${esc(moduleExplorerState.moduleColor)}</b></span><span><b>${meta.count.toLocaleString()}</b> total features</span><span><b>${meta.assigned_kme_count.toLocaleString()}</b> with kME</span><span><b>${meta.raw_unassigned_count.toLocaleString()}</b> raw-unassigned</span><span>median |kME| <b>${moduleNumber(meta.median_abs_kme)}</b></span><span>max |kME| <b>${moduleNumber(meta.max_abs_kme)}</b></span><span>${rows.length.toLocaleString()} search matches</span>`;
+  document.getElementById('moduleExplorerRows').innerHTML=shown.map(r=>`<tr class="${r[8]?'raw-unassigned':''}"><td class="num">${moduleNumber(r[7],0)}</td><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td class="num">${moduleNumber(r[5])}</td><td class="num">${moduleNumber(r[6])}</td><td>${r[8]?'<span class="raw-badge">raw-unassigned</span>':'assigned'}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">No matching features</td></tr>';
+  document.getElementById('moduleExplorerPage').textContent=`${start+1}-${Math.min(start+shown.length,rows.length)} of ${rows.length.toLocaleString()} · page ${moduleExplorerState.page}/${pages}`;
+  document.getElementById('moduleExplorerPrev').disabled=moduleExplorerState.page<=1;document.getElementById('moduleExplorerNext').disabled=moduleExplorerState.page>=pages;
+}
+async function selectModuleMembers(recordId,moduleColor){
+  const token=++moduleExplorerState.loadingToken;moduleExplorerState.recordId=recordId;moduleExplorerState.moduleColor=moduleColor;moduleExplorerState.payload=null;moduleExplorerState.page=1;
+  document.getElementById('moduleExplorerRows').innerHTML='<tr><td colspan="9" class="empty">Loading module members…</td></tr>';
+  try{const payload=await loadModuleShard(recordId,moduleColor);if(token!==moduleExplorerState.loadingToken)return;moduleExplorerState.payload=payload;renderModuleExplorer()}catch(error){if(token!==moduleExplorerState.loadingToken)return;document.getElementById('moduleExplorerRows').innerHTML=`<tr><td colspan="9" class="empty">${esc(error.message)}</td></tr>`}
+}
+function openModuleExplorer(recordId,moduleColor){
+  const entry=moduleEntry(recordId);if(!entry)return;const color=entry.modules[moduleColor]?moduleColor:moduleDefaultColor(entry);if(!color)return;
+  document.getElementById('moduleExplorerOverlay').hidden=false;document.body.classList.add('module-explorer-open');moduleExplorerState.query='';moduleExplorerState.sort='rank';document.getElementById('moduleExplorerSearch').value='';document.getElementById('moduleExplorerSort').value='rank';selectModuleMembers(recordId,color);
+}
+function closeModuleExplorer(){document.getElementById('moduleExplorerOverlay').hidden=true;document.body.classList.remove('module-explorer-open')}
+window.openModuleExplorer=openModuleExplorer;
+function moduleCsvCell(v){const s=String(v??'');return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s}
+function exportModuleMembers(){
+  const rows=moduleFilteredRows(),head=['hub_rank','feature_id','gene_id','symbol','PROBEID','UNIPROT','signed_kME','abs_kME','is_raw_unassigned'];const data=rows.map(r=>[r[7],r[0],r[1],r[2],r[3],r[4],r[5],r[6],r[8]]);const blob=new Blob(['\ufeff'+[head,...data].map(row=>row.map(moduleCsvCell).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${moduleExplorerState.recordId.replace(/[^a-zA-Z0-9_-]+/g,'_')}__${moduleExplorerState.moduleColor}__members.csv`;a.click();URL.revokeObjectURL(a.href);
+}
+document.getElementById('moduleExplorerClose').onclick=closeModuleExplorer;document.getElementById('moduleExplorerOverlay').onclick=e=>{if(e.target.id==='moduleExplorerOverlay')closeModuleExplorer()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('moduleExplorerOverlay').hidden)closeModuleExplorer()});
+document.getElementById('moduleExplorerModule').onchange=e=>selectModuleMembers(moduleExplorerState.recordId,e.target.value);document.getElementById('moduleExplorerSearch').oninput=e=>{moduleExplorerState.query=e.target.value;moduleExplorerState.page=1;renderModuleExplorer()};document.getElementById('moduleExplorerSort').onchange=e=>{moduleExplorerState.sort=e.target.value;moduleExplorerState.page=1;renderModuleExplorer()};document.getElementById('moduleExplorerPrev').onclick=()=>{moduleExplorerState.page--;renderModuleExplorer()};document.getElementById('moduleExplorerNext').onclick=()=>{moduleExplorerState.page++;renderModuleExplorer()};document.getElementById('moduleExplorerExport').onclick=exportModuleMembers;
+document.addEventListener('click',e=>{const moduleButton=e.target.closest('[data-open-modules]');if(moduleButton){openModuleExplorer(moduleButton.dataset.openModules,moduleButton.dataset.moduleColor||null);return}const row=e.target.closest('[data-module-record][data-module-color]');if(row)openModuleExplorer(row.dataset.moduleRecord,row.dataset.moduleColor)});
+const artifactStageDefinitions=[
+  {id:'before',label:'Before Preprocess',artifacts:['feature_selection','before_heatmap','before_pca','before_pca_3d']},
+  {id:'preprocess',label:'Preprocess',artifacts:['cut_diagnostic','selected_cut']},
+  {id:'after',label:'After Preprocess',artifacts:['after_heatmap','after_pca','after_pca_3d']},
+  {id:'modules',label:'Find Modules',artifacts:['soft_threshold','gene_dendrogram','me_dendrogram','module_sizes']},
+  {id:'downstream',label:'Downstream',artifacts:['diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity']},
+  {id:'other',label:'Other',artifacts:[]},
+];
+const artifactStageById=new Map(artifactStageDefinitions.flatMap(stage=>stage.artifacts.map(id=>[id,stage.id])));
+const artifactStageState={};
+function artifactStageOf(id){return artifactStageById.get(id)||'other'}
+function decorateArtifactStageBar(tabBar,stateKey,buttonSelector){
+  if(!tabBar||tabBar.dataset.stageGrouped==='true')return;
+  const buttons=[...tabBar.querySelectorAll(buttonSelector)];if(!buttons.length)return;
+  const available=artifactStageDefinitions.filter(stage=>buttons.some(button=>artifactStageOf(button.dataset.artifact||button.dataset.comparisonArtifact)===stage.id));
+  if(!available.length)return;
+  const active=buttons.find(button=>button.classList.contains('active')),activeStage=artifactStageOf(active?.dataset.artifact||active?.dataset.comparisonArtifact);
+  let chosen=artifactStageState[stateKey];if(!available.some(stage=>stage.id===chosen))chosen=available.some(stage=>stage.id===activeStage)?activeStage:available[0].id;artifactStageState[stateKey]=chosen;
+  const nav=document.createElement('div');nav.className='artifact-stage-tabs';nav.setAttribute('aria-label','Analysis stage');
+  for(const stage of available){const button=document.createElement('button');button.type='button';button.dataset.artifactStage=stage.id;button.className=stage.id===chosen?'active':'';button.textContent=stage.label;button.onclick=()=>{artifactStageState[stateKey]=stage.id;const first=buttons.find(item=>artifactStageOf(item.dataset.artifact||item.dataset.comparisonArtifact)===stage.id);if(first)first.click()};nav.appendChild(button)}
+  for(const button of buttons)button.style.display=artifactStageOf(button.dataset.artifact||button.dataset.comparisonArtifact)===chosen?'':'none';
+  tabBar.dataset.stageGrouped='true';tabBar.parentNode.insertBefore(nav,tabBar);
+}
+function decorateArtifactStages(){
+  const comparisonBar=document.querySelector('#cellComparison > .artifact-tabs');if(comparisonBar){const key=`comparison:${document.getElementById('source')?.value||''}:${document.getElementById('cell')?.value||''}`;decorateArtifactStageBar(comparisonBar,key,'[data-comparison-artifact]')}
+  const detailBar=document.querySelector('#detail > .artifact-tabs');if(detailBar)decorateArtifactStageBar(detailBar,`detail:${selectedId}`,'[data-artifact]');
+}
+let moduleDecoratePending=false;
+function decorateModuleEntrypoints(){
+  moduleDecoratePending=false;
+  decorateArtifactStages();
+  document.querySelectorAll('.condition-panel').forEach(panel=>{const inspect=panel.querySelector('[data-open-record]'),id=inspect?.dataset.openRecord;if(!id||!moduleEntry(id)||panel.querySelector('[data-open-modules]'))return;const button=document.createElement('button');button.type='button';button.className='module-open-button';button.dataset.openModules=id;button.textContent='Modules & kME';panel.querySelector('.condition-links')?.appendChild(button)});
+  const detailActions=document.querySelector('#detail .detail-head .actions');if(detailActions&&moduleEntry(selectedId)&&!detailActions.querySelector('[data-open-modules]')){const button=document.createElement('button');button.type='button';button.dataset.openModules=selectedId;button.textContent='Modules & kME';detailActions.appendChild(button)}
+  document.querySelectorAll('#detail .lower > div:first-child tbody tr').forEach(row=>{if(row.dataset.moduleRecord)return;const cell=row.querySelector('td'),color=cell?.textContent.trim();if(!color||!moduleEntry(selectedId)?.modules?.[color])return;row.classList.add('module-row');row.dataset.moduleRecord=selectedId;row.dataset.moduleColor=color;row.title='Open module members and kME ranks';const button=document.createElement('button');button.type='button';button.className='module-open-button';button.dataset.openModules=selectedId;button.dataset.moduleColor=color;button.textContent='View members';cell.appendChild(button)});
+  document.querySelectorAll('#compareGrid .compare-card').forEach((card,i)=>{const id=compareIds[i];if(!id||!moduleEntry(id)||card.querySelector('[data-open-modules]'))return;const button=document.createElement('button');button.type='button';button.className='module-open-button';button.dataset.openModules=id;button.textContent='Modules & kME';card.appendChild(button)});
+}
+function scheduleModuleDecoration(){if(moduleDecoratePending)return;moduleDecoratePending=true;queueMicrotask(decorateModuleEntrypoints)}
+new MutationObserver(scheduleModuleDecoration).observe(document.getElementById('cellComparison').parentElement,{childList:true,subtree:true});scheduleModuleDecoration();
+const moduleParams=new URLSearchParams(location.search);const deepRecord=moduleParams.get('module_record');if(deepRecord&&moduleEntry(deepRecord))setTimeout(()=>openModuleExplorer(deepRecord,moduleParams.get('module_color')),0);
+'''
 
 
 DASHBOARD_HTML = r'''<!doctype html>

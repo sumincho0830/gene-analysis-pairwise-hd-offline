@@ -1,5 +1,27 @@
 # Pipeline change log
 
+## 2026-11-19 — Dashboard 산출물 탭 단계화
+
+- 한 줄에 혼재하던 산출물 탭을 `Before Preprocess`, `Preprocess`,
+  `After Preprocess`, `Find Modules`, `Downstream`의 상위 stage로 분리했다.
+- 선택한 stage의 세부 산출물 탭만 아래에 나타나도록 변경했다.
+- Cell type comparison과 Individual run에 동일한 분류 및 순서를 적용했다.
+
+## 2026-11-19 — Module Explorer 추가
+
+- transcriptomics와 proteomics의 공식 kME 결과를 공통 schema로 변환하는
+  offline Module Explorer를 dashboard에 추가했다.
+- 173개 network, 2,177개 module, 1,339,762개 feature를 module별 lazy-load shard로
+  연결했다.
+- module 선택, identifier 검색, hub rank/|kME|/signed kME/feature ID 정렬,
+  pagination, CSV export를 추가했다.
+- transcriptomics는 gene ID를, proteomics는 PROBEID/SYMBOL/UniProt을 함께 표시한다.
+- `is_raw_unassigned=True` feature는 목록에 남기되 kME와 rank를 `NA`로 표시한다.
+- Cell type comparison, Individual run, module table, comparison card에서 동일한
+  Explorer를 열도록 연결했다.
+- full offline release builder가 `module-members/` index와 shard도 함께 복사하도록
+  갱신했다.
+
 ## 2026-11-19 — Cell type 중심 조건별 산출물 비교 화면 추가
 
 - 기존의 단일 실험 record 중심 dashboard에 `Cell type comparison` 기본 화면을 추가했다.

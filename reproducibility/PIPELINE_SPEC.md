@@ -1,5 +1,40 @@
 # QC pipeline reproducibility contract
 
+## Dashboard artifact stage navigation (2026-11-19)
+
+Cell type comparison과 Individual run의 산출물 선택은 두 단계로 구성한다. 첫 번째
+단계에서 분석 stage를 선택하고, 두 번째 단계에는 해당 stage의 산출물만 표시한다.
+
+- `Before Preprocess`: feature selection, before heatmap/PCA/PCA 3D
+- `Preprocess`: cut diagnostic, selected cut
+- `After Preprocess`: after heatmap/PCA/PCA 3D
+- `Find Modules`: soft threshold, gene dendrogram, ME dendrogram, module sizes
+- `Downstream`: pairwise-HD diagnosis, one-hot diagnosis audit, cross-omics similarity
+
+특정 실험에서 생성되지 않은 산출물은 해당 stage와 세부 탭 모두 표시하지 않는다.
+Stage를 바꾸면 그 stage에서 사용 가능한 첫 번째 산출물을 선택한다.
+
+## Module member explorer contract (2026-11-19)
+
+Inspection dashboard는 각 완료된 network의 공식
+`06_kme_module_diagnosis/.../feature_module_kme.csv.gz`를 source of truth로 사용한다.
+Dashboard builder는 이를 `dashboard/module-members/` 아래의 module별 JavaScript shard로
+변환한다. 전체 feature table을 한 번에 browser memory로 읽지 않고, 사용자가 선택한
+module 하나만 지연 로딩하기 위한 구조이다.
+
+- 표시 식별자: `feature_id`, `gene_id`, `SYMBOL`, `PROBEID`, `UNIPROT`
+- 표시 membership 값: signed kME, absolute kME, `hub_rank_within_module`
+- 기본 정렬: module 내부 hub rank 오름차순
+- 검색 범위: feature/gene/protein identifier 전체
+- export: 현재 module과 검색 조건에 해당하는 전체 행을 CSV로 저장
+- raw-unassigned 규칙: feature는 목록에 보존하지만 kME와 hub rank는 `NA`로 유지
+- 결측 규칙: 정의되지 않은 kME를 0으로 대체하지 않음
+- 해석 규칙: kME는 module membership의 크기와 방향이며 p-value나 질병 연관성이 아님
+
+진입점은 Cell type comparison의 각 condition panel, Individual run 상단,
+`Final proper modules`의 각 module 행, comparison card이다. `file://` 사용을 보장하기
+위해 `fetch()`나 외부 CDN을 사용하지 않고 local `<script>` shard를 로드한다.
+
 이 문서는 `results_20261119`에서 현재 확정된 파이프라인 순서, 계산 규칙, 저장 구조의 기준 문서다. 코드나 과거 결과와 설명이 충돌하면 먼저 이 문서를 기준으로 차이를 확인하고, 실제 재실행 전에는 해당 단계의 `run_manifest.json`과 현재 코드를 함께 검증한다.
 
 - 마지막 정리일: 2026-11-19
