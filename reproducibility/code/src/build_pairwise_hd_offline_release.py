@@ -254,7 +254,9 @@ def build(run_root: Path, output_root: Path) -> dict[str, Any]:
     hash_paths = sorted(
         path
         for path in output_root.rglob("*")
-        if path.is_file() and path.name != "SHA256SUMS.txt"
+        if path.is_file()
+        and path.name != "SHA256SUMS.txt"
+        and ".git" not in path.relative_to(output_root).parts
     )
     (output_root / "SHA256SUMS.txt").write_text(
         "\n".join(
