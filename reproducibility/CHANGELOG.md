@@ -1,5 +1,13 @@
 # Pipeline change log
 
+## 2026-11-19 — Pairwise-HD offline GitHub release 추가
+
+- 41GB 전체 실행 결과 대신 pairwise-HD 집계 결과만 포함한 약 41MB private 배포 저장소를 만들었다.
+- 173개 heatmap, 1,211개 module-level CSV/JSON, offline dashboard와 재현 코드를 포함했다.
+- raw/formatted matrix, 개인 sample ID, PyWGCNA 객체와 feature-level kME는 배포에서 제외했다.
+- `SHA256SUMS.txt`와 `verify_release.py`를 추가하고 Windows line-ending 변환을 비활성화했다.
+- GitHub에서 새로 clone한 복사본의 hash와 `file://` 렌더링을 확인했다.
+
 ## 2026-11-19 — Module–diagnosis를 direct disease-vs-HD 대조로 수정
 
 - 기존 PyWGCNA 다범주 one-hot heatmap이 `MS vs HD`가 아니라 `MS vs all other diagnoses`를 계산한다는 차이를 확인했다.

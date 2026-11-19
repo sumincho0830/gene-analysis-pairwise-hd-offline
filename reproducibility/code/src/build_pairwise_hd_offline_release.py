@@ -87,8 +87,8 @@ def write_readme(path: Path, record_count: int) -> None:
 ## 다른 컴퓨터에서 보기
 
 ```powershell
-git clone <PRIVATE_REPOSITORY_URL>
-cd <CLONED_DIRECTORY>
+git clone https://github.com/sumincho0830/gene-analysis-pairwise-hd-offline.git
+cd gene-analysis-pairwise-hd-offline
 start index.html
 ```
 

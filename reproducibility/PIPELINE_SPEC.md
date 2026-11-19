@@ -753,7 +753,17 @@ heatmap은 3개 직접 대조를 행, final proper module을 열로 사용한다
 
 재현 명령은 `code/src/run_pairwise_hd_module_diagnosis.py --omics all --overwrite`이다. 전역 summary는 proteomics의 `06_kme_module_diagnosis/pairwise_hd_summary.csv`와 transcriptomics의 `pairwise_hd_module_diagnosis_summary.csv`다. Inspection dashboard에서는 `Module-diagnosis (vs HD)`를 기본 visual evidence로 표시하고 기존 one-hot figure는 보조 audit tab으로 연결한다. Windows `file://`에서 260자를 넘는 원본 transcriptomics 경로가 깨지는 것을 막기 위해 dashboard builder는 heatmap을 `dashboard/assets/pairwise_hd/<path-hash>.png`로 mirror한다. 원본 분석 산출물과 manifest 경로는 바꾸지 않는다.
 
-## 18. Inspection dashboard visual system
+## 18. Pairwise-HD offline GitHub release
+
+전체 `results_20261119`는 약 41GB이며 100MB 초과 원본 matrix와 PyWGCNA 객체를 포함하므로 GitHub 배포 대상으로 사용하지 않는다. `code/src/build_pairwise_hd_offline_release.py`가 `results_20261119_pairwise_hd_offline/`에 별도의 privacy-minimized 배포본을 생성한다.
+
+배포본에는 완료된 173개 network의 `Module-diagnosis (vs HD)` heatmap, module-level r/p/q와 sample count, analysis summary, sanitised manifest, dashboard, 생성 코드와 문서만 포함한다. raw/formatted expression matrix, 개인 sample ID가 있는 sample-level table, `.p/.p.gz/.p.zst` 객체와 전체 feature-level kME table은 포함하지 않는다.
+
+dashboard는 모든 asset과 table을 저장소 내부 상대경로로 연결하며 CDN, `fetch()`, web server가 필요하지 않다. 각 파일의 SHA-256은 `SHA256SUMS.txt`에 기록하고 `python verify_release.py`로 clone 이후 무결성을 확인한다. `.gitattributes`의 `* -text` 규칙으로 Windows clone 시 CRLF 자동 변환이 hash를 바꾸지 않게 한다.
+
+private 저장소는 `https://github.com/sumincho0830/gene-analysis-pairwise-hd-offline`이다. 다른 컴퓨터에서는 clone 후 repository root의 `index.html`을 직접 열어 사용한다.
+
+## 19. Inspection dashboard visual system
 
 `dashboard/index.html`의 visual layer는 `results_20261015/design-system.md`를 기준으로 한다. 데이터 adapter, normalized record schema, filter, search, comparison, review, CSV import/export와 artifact 연결 방식은 바꾸지 않고 다음 표시 규칙만 적용한다.
 
