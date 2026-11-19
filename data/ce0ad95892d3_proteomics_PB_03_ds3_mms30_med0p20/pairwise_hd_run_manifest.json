@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "pipeline": "proteomics_pairwise_hd_module_diagnosis",
+  "generated_at_utc": "2026-11-18T23:47:22.406739+00:00",
+  "run_root": "source run: results_20261119 (not included in release)",
+  "parameters": {
+    "reference_diagnosis": "HD",
+    "target_diagnoses": [
+      "MS",
+      "MOGAD",
+      "NMOSD"
+    ],
+    "minimum_group_n_for_inference": 3,
+    "alternative": "two-sided",
+    "specimen": "PB",
+    "condition": "03_ds3_mms30_med0p20"
+  },
+  "generation_rules": {
+    "sample_subset": "for each row keep only HD and the target diagnosis; exclude every other diagnosis",
+    "diagnosis_encoding": "HD=0; target diagnosis=1",
+    "statistic": "scipy.stats.pointbiserialr; mathematically Pearson r with a binary diagnosis indicator",
+    "direction": "positive r means higher module eigengene in target diagnosis than HD",
+    "multiple_testing": "BH-FDR across inference-ready module x target-diagnosis tests within this network",
+    "display": "signed r with unadjusted two-sided p; star marks within-network q<0.05; low-support estimates carry dagger",
+    "missingness": "missing group or zero-variance eigengene is shown as NA, never zero",
+    "module_scope": "saved final proper module eigengenes; fully raw-unassigned eigengene excluded"
+  },
+  "inputs": [
+    {
+      "path": "experiments/01_batch_corrected/proteomics/03_preprocess/PB/02_selected_cut/PROT_PB_selected_cut.p",
+      "size_bytes": 9841866,
+      "sha256": "dbc55d1d6aaffe2393698f7317bbeacd031d220ecdc317385f40a52dad5d01e9"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/05_find_modules/PB/03_ds3_mms30_med0p20/module_eigengenes.csv",
+      "size_bytes": 32749,
+      "sha256": "40e243fcce106cffeda9e862f25d8d39f51bca465535135d44b969e978a47806"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/03_ds3_mms30_med0p20/module_kme_summary.csv",
+      "size_bytes": 739,
+      "sha256": "7230917fd13c5f82d9871dee066e1e282eb421052b81e378102d29f48c64aa32"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/03_ds3_mms30_med0p20/module_diagnosis_pairwise_hd_correlations.csv",
+      "size_bytes": 753,
+      "sha256": "232a051d8fb6e505223f39cfa6ef7a110f73105eb6bad8f5d4f2a7e65bcfb56d"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/03_ds3_mms30_med0p20/module_diagnosis_pairwise_hd_pvalues.csv",
+      "size_bytes": 763,
+      "sha256": "578b8d851e6d112d065242358a09f9ef744b25e9bda29478a7e7c8ffab2637bf"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/03_ds3_mms30_med0p20/module_diagnosis_pairwise_hd_qvalues.csv",
+      "size_bytes": 754,
+      "sha256": "c9ff489649d8524fdb53d073d2ba3e582e9a1021b5a281e346b32a881d637979"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/03_ds3_mms30_med0p20/module_diagnosis_pairwise_hd_statistics.csv",
+      "size_bytes": 8442,
+      "sha256": "4c1a09d815e6516bdda0daa3c6d85ec56c7c142a1e9e632e221d31f4d01d2e69"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/03_ds3_mms30_med0p20/module_diagnosis_pairwise_hd_sample_counts.csv",
+      "size_bytes": 258,
+      "sha256": "08968e9218e293d3544155fde0071b3284cc7cf5f8ae97f7720e65ea179eb051"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/03_ds3_mms30_med0p20/figures/module_diagnosis_pairwise_hd_heatmap.png",
+      "size_bytes": 201091,
+      "sha256": "cae167ad181ce3e656cf0077b56d0a4dc25c6bdfefd044e517b7ab805f2be2c9"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/03_ds3_mms30_med0p20/pairwise_hd_analysis_summary.json",
+      "size_bytes": 1026,
+      "sha256": "6e3deefcdb7c61eb6390d64afbc011c3e4113a9218e9442ce268ef6f92be652b"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_pairwise_hd_module_diagnosis.py",
+      "size_bytes": 22833,
+      "sha256": "24bcb23d62ec7adb1eef6c1aea8cfe171ddcd6d24a03d6a983bb526c09493314"
+    },
+    {
+      "path": "code/src/run_official_kme_module_diagnosis.py",
+      "size_bytes": 26252,
+      "sha256": "4a731c33107e71ff07e419db9150df8f08a5e85e6672a292056d756f5ca7a75d"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "seaborn": "0.13.2",
+      "PyWGCNA": "2.2.1",
+      "anndata": "0.12.6"
+    }
+  }
+}
