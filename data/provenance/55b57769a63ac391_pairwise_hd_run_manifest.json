@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_pairwise_hd_module_diagnosis",
+  "generated_at_utc": "2026-11-18T23:47:58.792535+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "reference_diagnosis": "HD",
+    "target_diagnoses": [
+      "MS",
+      "MOGAD",
+      "NMOSD"
+    ],
+    "minimum_group_n_for_inference": 3,
+    "alternative": "two-sided",
+    "threshold": "threshold_10_cells",
+    "strategy": "03_hvg_top5000",
+    "mode": "cell_separate",
+    "specimen": "PB",
+    "cell_type": "other",
+    "condition": "01_default_ds2_mms50_med0p20"
+  },
+  "generation_rules": {
+    "sample_subset": "for each row keep only HD and the target diagnosis; exclude every other diagnosis",
+    "diagnosis_encoding": "HD=0; target diagnosis=1",
+    "statistic": "scipy.stats.pointbiserialr; mathematically Pearson r with a binary diagnosis indicator",
+    "direction": "positive r means higher module eigengene in target diagnosis than HD",
+    "multiple_testing": "BH-FDR across inference-ready module x target-diagnosis tests within this network",
+    "display": "signed r with unadjusted two-sided p; star marks within-network q<0.05; low-support estimates carry dagger",
+    "missingness": "missing group or zero-variance eigengene is shown as NA, never zero",
+    "module_scope": "saved final proper module eigengenes; fully raw-unassigned eigengene excluded"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/03_preprocess/02_selected_cut/TRANSCRIPTOMICS_threshold_10_cells_cell_separate_PB_other_03_hvg_top5000_selected_cut_inf.p.zst",
+      "size_bytes": 2063407,
+      "sha256": "085716fe1d4bfd89400b605e95a261b7bf66ff0e6d766adab2ab7572ff5be399"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/05_find_modules/01_default_ds2_mms50_med0p20/module_eigengenes.csv",
+      "size_bytes": 3065,
+      "sha256": "60c34e20215170f072537f9a6a4b3bc2962089aeb250f8c00141e97ee50625e6"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_kme_summary.csv",
+      "size_bytes": 273,
+      "sha256": "b807278498cf1fc56c259ac8d1dbfa4dc8df15f303c93beba2e36b82c44a0cc8"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_correlations.csv",
+      "size_bytes": 182,
+      "sha256": "64664690031a10a5b8fea11068444003fdb45643a229d8daebdbeeda6f570af9"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_pvalues.csv",
+      "size_bytes": 181,
+      "sha256": "a6ee2b47b71171aa5ac6a679c8ef1ffa268e70160ffb6d27565573509bff7aae"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_qvalues.csv",
+      "size_bytes": 178,
+      "sha256": "65b2cf4e01d5be7860b2db0f1c73493d2b96548dd2d70dba4a615bcd65d0ca8a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_statistics.csv",
+      "size_bytes": 2420,
+      "sha256": "33f67b9362e86c91f60acc5661109a2e99961f98c9a902b1e8c9c1258bd4bea0"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_sample_counts.csv",
+      "size_bytes": 256,
+      "sha256": "bedc7c9c870efb06eb650b7b51bff0d9f13997cfed673e104492d080fcf34674"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/figures/module_diagnosis_pairwise_hd_heatmap.png",
+      "size_bytes": 107105,
+      "sha256": "dc490d987d3ca09d5819bda294a0d9360becc03e60b0824e749cf7f235bd7187"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/PB/other/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/pairwise_hd_analysis_summary.json",
+      "size_bytes": 1161,
+      "sha256": "a45da8772ce80c40bc61ac15a99c2118a3deebcd2b5198a031d97902882c93f2"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_pairwise_hd_module_diagnosis.py",
+      "size_bytes": 22833,
+      "sha256": "24bcb23d62ec7adb1eef6c1aea8cfe171ddcd6d24a03d6a983bb526c09493314"
+    },
+    {
+      "path": "code/src/run_official_kme_module_diagnosis.py",
+      "size_bytes": 26252,
+      "sha256": "4a731c33107e71ff07e419db9150df8f08a5e85e6672a292056d756f5ca7a75d"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "seaborn": "0.13.2",
+      "PyWGCNA": "2.2.1",
+      "anndata": "0.12.6"
+    }
+  }
+}

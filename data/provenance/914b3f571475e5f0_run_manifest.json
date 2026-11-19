@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_official_kme_module_diagnosis",
+  "generated_at_utc": "2026-11-18T23:08:19.221859+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "trait": "diagnosis",
+    "alternative": "two-sided",
+    "kme_chunk_size": 1000,
+    "threshold": "threshold_10_cells",
+    "strategy": "02_hvg_top9000",
+    "mode": "cell_separate",
+    "specimen": "PB",
+    "cell_type": "NK_cell",
+    "condition": "01_default_ds2_mms50_med0p20"
+  },
+  "generation_rules": {
+    "expression": "stored selected-cut PyWGCNA datExpr; no additional transform/filter/imputation",
+    "module_assignment": "saved final findModules module_color aligned by feature ID",
+    "module_eigengene": "saved final findModules ME matrix aligned by sample ID; raw-label-0 fully unassigned eigengene excluded like intended MEgrey handling",
+    "kME": "public PyWGCNA.CalculateSignedKME called per independent feature chunk; all feature-to-ME correlations retained",
+    "diagnosis_encoding": "public PyWGCNA.getDatTraits values; object dtype cast to float for pandas 3 / SciPy 1.17 compatibility",
+    "heatmap": "public PyWGCNA.module_trait_relationships_heatmap with diagnosis and two-sided Pearson test",
+    "heatmap_annotation": "official unadjusted Pearson p-value; supplemental BH-FDR is CSV only"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/03_preprocess/02_selected_cut/TRANSCRIPTOMICS_threshold_10_cells_cell_separate_PB_NK_cell_02_hvg_top9000_selected_cut.p.zst",
+      "size_bytes": 4674432,
+      "sha256": "861d9b8ffe1558365b3b3fe82d35c1fc7961e9631042a556a31dcb99c2e68822"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/05_find_modules/01_default_ds2_mms50_med0p20/module_assignments.csv.gz",
+      "size_bytes": 166244,
+      "sha256": "3c64fe96fb60435e116976f73dd6ec1e69b933e03f78b36523a400690d754334"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/05_find_modules/01_default_ds2_mms50_med0p20/module_eigengenes.csv",
+      "size_bytes": 5668,
+      "sha256": "a91bf4867080f606c6d9734dd71258559e9b1a605ded2cab8f624f6ef0bc3f42"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 506986,
+      "sha256": "07cc563ee03b3095edd543fa2ca7d6a8d333f6d22f3687e6279dc7e809d9302d"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_kme_summary.csv",
+      "size_bytes": 408,
+      "sha256": "c63bcc1bf02d2c49274c3b24f2e04a577ae22bda8c564553d0d16748a2d8346f"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_correlations.csv",
+      "size_bytes": 407,
+      "sha256": "a06568846687ab46a60e01a3dc9be99de4500d293aa8e3b448a7225d76627253"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pvalues.csv",
+      "size_bytes": 399,
+      "sha256": "e203be5fddcc3d001993bf9eb899529caf1c29ab40278e8ea979b06bfa3fde0e"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_statistics.csv",
+      "size_bytes": 1497,
+      "sha256": "aba7b97bccade8aee767de2cb20f9c62f15dc45670563f7104c5a53857de65dd"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/diagnosis_trait_encoding.csv",
+      "size_bytes": 2099,
+      "sha256": "6386a81416bd34233cb98934fe5eff99384c42b80a5fa6126cecb3eb0ae7f364"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/analysis_summary.json",
+      "size_bytes": 1438,
+      "sha256": "2cc77e5f94e0b9a0c34a626c05963ae56bd65620a218792469e3d71d58949e5a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/NK_cell/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/figures/module_diagnosis_heatmap.png",
+      "size_bytes": 115801,
+      "sha256": "207b389135396d584e56034d783613e452dcab7fe59f776ea191612f431cf8b3"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_official_kme_module_diagnosis.py",
+      "size_bytes": 26252,
+      "sha256": "4a731c33107e71ff07e419db9150df8f08a5e85e6672a292056d756f5ca7a75d"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "seaborn": "0.13.2",
+      "PyWGCNA": "2.2.1",
+      "anndata": "0.12.6"
+    }
+  }
+}

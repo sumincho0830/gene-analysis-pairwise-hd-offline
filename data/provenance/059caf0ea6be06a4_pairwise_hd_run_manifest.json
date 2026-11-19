@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_pairwise_hd_module_diagnosis",
+  "generated_at_utc": "2026-11-18T23:47:35.715282+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "reference_diagnosis": "HD",
+    "target_diagnoses": [
+      "MS",
+      "MOGAD",
+      "NMOSD"
+    ],
+    "minimum_group_n_for_inference": 3,
+    "alternative": "two-sided",
+    "threshold": "threshold_5_cells",
+    "strategy": "03_hvg_top5000",
+    "mode": "cell_separate",
+    "specimen": "PB",
+    "cell_type": "Macrophages",
+    "condition": "01_default_ds2_mms50_med0p20"
+  },
+  "generation_rules": {
+    "sample_subset": "for each row keep only HD and the target diagnosis; exclude every other diagnosis",
+    "diagnosis_encoding": "HD=0; target diagnosis=1",
+    "statistic": "scipy.stats.pointbiserialr; mathematically Pearson r with a binary diagnosis indicator",
+    "direction": "positive r means higher module eigengene in target diagnosis than HD",
+    "multiple_testing": "BH-FDR across inference-ready module x target-diagnosis tests within this network",
+    "display": "signed r with unadjusted two-sided p; star marks within-network q<0.05; low-support estimates carry dagger",
+    "missingness": "missing group or zero-variance eigengene is shown as NA, never zero",
+    "module_scope": "saved final proper module eigengenes; fully raw-unassigned eigengene excluded"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/03_preprocess/02_selected_cut/TRANSCRIPTOMICS_threshold_5_cells_cell_separate_PB_Macrophages_03_hvg_top5000_selected_cut_inf.p.zst",
+      "size_bytes": 1732007,
+      "sha256": "4b0dc5b2d8ada07143acb005465bb9aae65f15d6d1e4525759c4e1a5b53b162b"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/05_find_modules/01_default_ds2_mms50_med0p20/module_eigengenes.csv",
+      "size_bytes": 4211,
+      "sha256": "9395ceb37ec07a47caf5f65650c0921d6916337bd97e585819ee129784227144"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_kme_summary.csv",
+      "size_bytes": 383,
+      "sha256": "04e0c1af5ac66f41b2458e78808781775a315e655389fdb85cc9a073a52ba77d"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_correlations.csv",
+      "size_bytes": 318,
+      "sha256": "bde94e5ce89c5c564822f1d89db91364e39611a21277089bc47f8c521a0db2a1"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_pvalues.csv",
+      "size_bytes": 312,
+      "sha256": "5aa142502564c87a1ba63dd1ea32af2f3a581db0346e9385237081b4a8a2380d"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_qvalues.csv",
+      "size_bytes": 313,
+      "sha256": "7a290b4b9ae377f961b5311591a5a13b3f9444a0bd09432913fc41de5562b18e"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_statistics.csv",
+      "size_bytes": 4566,
+      "sha256": "0c40de039a8e3f7e05f41bbd435c1930f4810f78f76374fc23e0b53a46938a4b"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pairwise_hd_sample_counts.csv",
+      "size_bytes": 256,
+      "sha256": "24d3a14f0f8bbbbfb62c389e8adb7852cd19af71b830623bf549ec0995fdc3f4"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/figures/module_diagnosis_pairwise_hd_heatmap.png",
+      "size_bytes": 131401,
+      "sha256": "8fcf77ee26eb9827667f1027daa30c76c0312b352b12b0eec75816bd4d308683"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/PB/Macrophages/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/pairwise_hd_analysis_summary.json",
+      "size_bytes": 1173,
+      "sha256": "2e08fb3668ece4cb76261bc5cccfb7e755b293eee98b4bd5742bfda6fa0bd9c2"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_pairwise_hd_module_diagnosis.py",
+      "size_bytes": 22833,
+      "sha256": "24bcb23d62ec7adb1eef6c1aea8cfe171ddcd6d24a03d6a983bb526c09493314"
+    },
+    {
+      "path": "code/src/run_official_kme_module_diagnosis.py",
+      "size_bytes": 26252,
+      "sha256": "4a731c33107e71ff07e419db9150df8f08a5e85e6672a292056d756f5ca7a75d"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "seaborn": "0.13.2",
+      "PyWGCNA": "2.2.1",
+      "anndata": "0.12.6"
+    }
+  }
+}

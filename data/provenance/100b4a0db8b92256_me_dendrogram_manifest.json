@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_dynamic_module_eigengene_dendrogram",
+  "generated_at_utc": "2026-11-18T22:33:45.937092+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "distance": "1 - Pearson correlation",
+    "linkage": "average",
+    "MEDissThres": 0.2,
+    "raw_dynamic_label_0": "excluded as unassigned"
+  },
+  "generation_rules": {
+    "module_stage": "dynamic tree cut before ME merge",
+    "eigengene": "signed first PC after per-gene standardization across samples",
+    "reference": "same calculation and layout as proteomics module_eigengene_dendrogram.png"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Classical_Monocytes/03_preprocess/02_selected_cut/matrix_after_preprocess.csv.gz",
+      "size_bytes": 4032272,
+      "sha256": "9bb2f15a040ded2e384d0afd240cc53a3086e0c4be6722265410c64eabc6814a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Classical_Monocytes/05_find_modules/01_default_ds2_mms50_med0p20/module_assignments.csv.gz",
+      "size_bytes": 116792,
+      "sha256": "c8f57bcbddf57f347fdc546e7302c5627efcacc6453107fb7d3af5f2dfbdffce"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Classical_Monocytes/05_find_modules/01_default_ds2_mms50_med0p20/analysis_summary.json",
+      "size_bytes": 1149,
+      "sha256": "f2c532b2b123c7497c569d4802ef973643c20a5952c24cdfdbb2e68937455f8c"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Classical_Monocytes/05_find_modules/01_default_ds2_mms50_med0p20/figures/module_eigengene_dendrogram.png",
+      "size_bytes": 80147,
+      "sha256": "89f3f66ac6dbae5e9d4ddc2d8b2c946776ddd630a0fe3dc40f977c1ed93ccb5a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Classical_Monocytes/05_find_modules/01_default_ds2_mms50_med0p20/dynamic_module_eigengenes.csv",
+      "size_bytes": 14653,
+      "sha256": "d9b6772c4900f3e9d4cc2ae78f6261e7a9c5cf273dc97d6892b727011414002d"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Classical_Monocytes/05_find_modules/01_default_ds2_mms50_med0p20/module_eigengene_linkage.csv",
+      "size_bytes": 425,
+      "sha256": "48a802b1c819b8a488238c14d4b7c9ca5e5c01a7ffa1b3c616531fd5b0728cf4"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_transcriptomics_variance_find_modules.py",
+      "size_bytes": 50618,
+      "sha256": "7281c47ed7b094cb5cd03adcaad000413c8a19821be6a8ed93a38238cb7a183a"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1"
+    }
+  }
+}

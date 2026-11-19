@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_official_kme_module_diagnosis",
+  "generated_at_utc": "2026-11-18T23:08:47.004076+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "trait": "diagnosis",
+    "alternative": "two-sided",
+    "kme_chunk_size": 1000,
+    "threshold": "threshold_5_cells",
+    "strategy": "01_cpm_detection",
+    "mode": "cell_separate",
+    "specimen": "PB",
+    "cell_type": "Non_classical_Monocytes",
+    "condition": "01_default_ds2_mms50_med0p20"
+  },
+  "generation_rules": {
+    "expression": "stored selected-cut PyWGCNA datExpr; no additional transform/filter/imputation",
+    "module_assignment": "saved final findModules module_color aligned by feature ID",
+    "module_eigengene": "saved final findModules ME matrix aligned by sample ID; raw-label-0 fully unassigned eigengene excluded like intended MEgrey handling",
+    "kME": "public PyWGCNA.CalculateSignedKME called per independent feature chunk; all feature-to-ME correlations retained",
+    "diagnosis_encoding": "public PyWGCNA.getDatTraits values; object dtype cast to float for pandas 3 / SciPy 1.17 compatibility",
+    "heatmap": "public PyWGCNA.module_trait_relationships_heatmap with diagnosis and two-sided Pearson test",
+    "heatmap_annotation": "official unadjusted Pearson p-value; supplemental BH-FDR is CSV only"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/03_preprocess/02_selected_cut/TRANSCRIPTOMICS_threshold_5_cells_cell_separate_PB_Non_classical_Monocytes_01_cpm_detection_selected_cut.p.gz",
+      "size_bytes": 6048748,
+      "sha256": "73cd65d3dfe4e55e301304bdbb0132923f50e025234cedb727ba417353251382"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/05_find_modules/01_default_ds2_mms50_med0p20/module_assignments.csv.gz",
+      "size_bytes": 139380,
+      "sha256": "19c6a626b4db81af601820094f812748748652a5a850dc351a01f148779bf293"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/05_find_modules/01_default_ds2_mms50_med0p20/module_eigengenes.csv",
+      "size_bytes": 5650,
+      "sha256": "0fca7596256f46cbf89b05f82588dcd50efa61a03ab98b2cbec6c0ad63a39825"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 507554,
+      "sha256": "d39383181b9f0858d8e1a6a204b4405e0a00199828aa5d36361e9d37ca2a66ec"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_kme_summary.csv",
+      "size_bytes": 414,
+      "sha256": "73aadba58af249fc9245cfb4bfee2074c50f5e7521d629fc14a942849977d890"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_correlations.csv",
+      "size_bytes": 411,
+      "sha256": "1aa05388536e97bbeeb2cea16edbc9db6507b98abcfe237f8945c90c3da87155"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pvalues.csv",
+      "size_bytes": 395,
+      "sha256": "bb016efa79f9669e785a026dbe625f0db246d88158802d9f9d5ff44d51bf2a06"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_statistics.csv",
+      "size_bytes": 1499,
+      "sha256": "35a5efa49ee8216db4d6ea4533f06a185e9ba7367bd0cb14570481ef7909e54b"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/diagnosis_trait_encoding.csv",
+      "size_bytes": 2092,
+      "sha256": "7b80de321c5f2bae5453c84d73a33c5c5ff924c83180afd110484012bf2c9223"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/analysis_summary.json",
+      "size_bytes": 1468,
+      "sha256": "25fcf040af90ce0a6fbd8a73f922e0978d5a7d48d4de6f07b82602796a9a8246"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/PB/Non_classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/figures/module_diagnosis_heatmap.png",
+      "size_bytes": 120993,
+      "sha256": "9bcff5ef2fa0cc33154ea9e7afb8f87b4c53910a2f84701f740e113cc0778337"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_official_kme_module_diagnosis.py",
+      "size_bytes": 26252,
+      "sha256": "4a731c33107e71ff07e419db9150df8f08a5e85e6672a292056d756f5ca7a75d"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "seaborn": "0.13.2",
+      "PyWGCNA": "2.2.1",
+      "anndata": "0.12.6"
+    }
+  }
+}

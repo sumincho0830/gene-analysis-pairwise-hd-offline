@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_dynamic_module_eigengene_dendrogram",
+  "generated_at_utc": "2026-11-18T22:33:44.428173+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "distance": "1 - Pearson correlation",
+    "linkage": "average",
+    "MEDissThres": 0.2,
+    "raw_dynamic_label_0": "excluded as unassigned"
+  },
+  "generation_rules": {
+    "module_stage": "dynamic tree cut before ME merge",
+    "eigengene": "signed first PC after per-gene standardization across samples",
+    "reference": "same calculation and layout as proteomics module_eigengene_dendrogram.png"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/Proliferating_T_cell/03_preprocess/02_selected_cut/matrix_after_preprocess.csv.gz",
+      "size_bytes": 2558835,
+      "sha256": "aa767efb81ab80c4814c1e85c513364fa7993901af507fc3f6420ce2385e6966"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/Proliferating_T_cell/05_find_modules/01_default_ds2_mms50_med0p20/module_assignments.csv.gz",
+      "size_bytes": 172058,
+      "sha256": "dc476b8446e7e6179706b9f1fd98c1bb2ab97a28bc7e8c8889bb3470d10762bb"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/Proliferating_T_cell/05_find_modules/01_default_ds2_mms50_med0p20/analysis_summary.json",
+      "size_bytes": 1151,
+      "sha256": "8d7cec03202f54ee1af9b7d955291bcd3bb40c793d4e7c741adf2ef2862ffb33"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/Proliferating_T_cell/05_find_modules/01_default_ds2_mms50_med0p20/figures/module_eigengene_dendrogram.png",
+      "size_bytes": 126012,
+      "sha256": "838f23d3b9ae45ee067e0775dc1725eb9c421e6eb1c27f51b85632bfae78b245"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/Proliferating_T_cell/05_find_modules/01_default_ds2_mms50_med0p20/dynamic_module_eigengenes.csv",
+      "size_bytes": 23575,
+      "sha256": "def8e8d5cc952ef8763417c4a36564bcd7792946ab7faf67fd1760a5a58a7c0f"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/02_hvg_top9000/cell_separate/PB/Proliferating_T_cell/05_find_modules/01_default_ds2_mms50_med0p20/module_eigengene_linkage.csv",
+      "size_bytes": 1035,
+      "sha256": "86f620bfe44d2ad89229fa0482e5c1df170244aba82217b95806cf590820385f"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_transcriptomics_variance_find_modules.py",
+      "size_bytes": 50618,
+      "sha256": "7281c47ed7b094cb5cd03adcaad000413c8a19821be6a8ed93a38238cb7a183a"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1"
+    }
+  }
+}

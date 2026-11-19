@@ -3,8 +3,8 @@
 이 문서는 `results_20261119`에서 현재 확정된 파이프라인 순서, 계산 규칙, 저장 구조의 기준 문서다. 코드나 과거 결과와 설명이 충돌하면 먼저 이 문서를 기준으로 차이를 확인하고, 실제 재실행 전에는 해당 단계의 `run_manifest.json`과 현재 코드를 함께 검증한다.
 
 - 마지막 정리일: 2026-11-19
-- 현재 구현 범위: proteomics raw QC부터 `findModules` parameter sensitivity study까지, transcriptomics raw/batch-corrected QC, seed-0 terminal replicate filtering, gene filtering, 세 가지 variance/CPM feature-selection 비교, selected-cut preprocess·after-preprocess QC와 기본 `findModules`·dendrogram gallery까지
-- 현재 중단 지점: transcriptomics variance-filter 기본 `findModules` 결과 검토 및 parameter tuning 전
+- 현재 구현 범위: proteomics raw QC부터 `findModules` parameter sensitivity study까지, transcriptomics raw/batch-corrected QC, seed-0 terminal replicate filtering, gene filtering, 세 가지 variance/CPM feature-selection 비교, selected-cut preprocess·after-preprocess QC, 기본 `findModules`, ME 병합 후보 진단과 `MEDissThres=0.10` 실제 재계산까지
+- 현재 중단 지점: transcriptomics variance-filter의 기본값과 `MEDissThres=0.10` 재계산 결과 비교·선택 전
 - 실행하지 않은 단계: parameter-tuned 최종 network, module-trait association, enrichment 및 기타 downstream 해석
 - raw proteomics 정책: QC까지만 수행하며 PyWGCNA `preprocess()`는 실행하지 않는다.
 - raw transcriptomics 정책: cell-separated/cell-integrated QC까지만 수행하며 PyWGCNA `preprocess()`는 실행하지 않는다.
@@ -649,6 +649,17 @@ cut 의사결정의 단일 입력은 `experiments/01_batch_corrected/transcripto
 
 완료 상태는 165개 `complete_findModules`, 표본이 2개인 동일 network의 전략별 3개 `not_run_preprocess_incomplete`, 0개 failure다. 완료 network의 final proper module 수는 1–51개이며, 9개 network가 ME 병합 후 하나의 proper module로 collapse했다. headless Edge로 `file://` HTML을 렌더링해 168개 카드와 로컬 이미지 표시도 확인했다.
 
+### 13.4 ME 병합 후보 진단과 예측 파라미터 실제 재계산
+
+- ME dendrogram으로 직접 추정할 수 있는 parameter는 module eigengene 병합 기준인 `MEDissThres`다. gene tree를 다시 자르는 `deepSplit`은 ME dendrogram만으로 예측하지 않는다.
+- 후보 조건은 `deepSplit=2`, `minModuleSize=50`, `pamRespectsDendro=False`, 선택 power, adjacency, TOM, gene tree와 dynamic module을 기본 결과와 동일하게 유지하고 `MEDissThres`만 `0.20`에서 `0.10`으로 바꾼다.
+- 이 조건에서는 adjacency/TOM과 dynamic tree cut을 다시 계산할 필요가 없다. 저장된 dynamic module에서 PyWGCNA 공식 `mergeCloseModules(cutHeight=0.10, iterate=True)`를 실행해 변경된 ME 병합 단계만 정확히 재계산한다.
+- 재계산 전에 같은 dynamic module을 `MEDissThres=0.20`으로 병합해 기존 baseline partition과 color label을 모두 재현해야 한다. 어느 하나라도 다르면 해당 network는 후보 계산을 중단한다.
+- 단순 dendrogram 절단으로 얻은 `predicted_diagnostic_module_count`는 진단값이다. 실제 `mergeCloseModules()`는 병합 후 ME를 다시 계산하며 반복하므로 `actual_final_module_count`가 예측보다 작을 수 있다. 최종 판단에는 실제 재계산값을 사용한다.
+- 출력은 각 network의 `05_find_modules/02_predicted_ds2_mms50_med0p10/`에 baseline과 같은 compact artifact 구조로 저장한다. dense adjacency/TOM과 전체 model object는 중복 저장하지 않는다.
+- 전역 결과는 `07_module_merge_diagnostics/actual_rerun_summary.csv`, `actual_rerun_analysis_summary.json`, `actual_rerun_errors.json`, `actual_rerun_manifest.json`에 저장하고 `07_module_merge_diagnostics/index.html`에서 baseline, 진단 예측, 실제 결과를 함께 비교한다.
+- 완료된 165개 baseline 중 merge 후보로 선정된 120개를 실제 재계산했다. 120개 모두 baseline partition 및 exact color-label 재현을 통과했고 failure는 0개였다. 총 proper module 수는 baseline 1,774개, 단순 진단 예측 2,363개, 실제 iterative merge 2,339개였으며 baseline에서 collapse한 후보 4개는 실제 `MEDissThres=0.10` 결과에서 모두 해소됐다.
+
 ## 14. 실험 inspection dashboard
 
 `dashboard/index.html`은 여러 실험 결과를 사람이 직접 찾고 비교하며 최종 판단을 기록하기 위한 offline inspection 화면이다. 결과 디렉토리를 HTML에 직접 하드코딩하면 실험이 추가될 때마다 화면 코드를 수정해야 하므로, 다음 세 층을 분리한다.
@@ -658,6 +669,8 @@ cut 의사결정의 단일 입력은 `experiments/01_batch_corrected/transcripto
 3. **Stable UI and review state**: `index.html`은 registry만 읽고 필터·검색·비교·검토 기능을 제공한다. 판단과 메모는 `localStorage`에 임시 보존하고 CSV로 export/import한다.
 
 현재 예시는 `04_variance_filtered/transcriptomics`의 168개 feature-selection/findModules 조합을 연결한다. 실험 record에는 threshold, feature-selection 전략, cell mode, specimen, cell type, 상태, sample/gene 수, power, module 수, unassigned 비율, kME와 runtime을 포함한다. artifact에는 ME dendrogram, gene dendrogram, soft-threshold, module size, feature-selection, before/after heatmap·PCA, sample-cut figure를 연결한다. 원본 summary·assignment·eigengene·linkage·manifest 파일도 같은 record에서 열 수 있다.
+
+기본 화면은 **Cell type comparison**이다. source와 cell type을 하나 고르면 해당 cell의 모든 threshold × feature-selection × specimen 조건을 유지한 채, 산출물 종류를 탭으로 전환한다. 한 탭에는 같은 산출물을 조건별 2열 panel로 모두 표시하고 `threshold → feature strategy → specimen` 순으로 자연 정렬해 같은 조건의 CSF/PB가 연속해서 나타나게 한다. 현재 transcriptomics record에서는 cell type당 최대 12개 조건과 16개 artifact 탭을 제공한다. 각 panel은 sample/gene 수, dynamic→final module 수와 review 상태를 표시하며 원본 artifact 또는 기존 단일-record inspection으로 이동할 수 있다.
 
 검토자는 각 record에 `Use / Hold / Do not use`를 지정하고 soft threshold, module 병합·크기, sample outlier, downstream 준비 여부를 체크하며 근거 메모를 남긴다. 여러 실험은 최대 4개까지 comparison workspace에 올려 ME dendrogram과 핵심 수치를 함께 본다. 판단 완료 후 export한 review CSV를 의사결정 원본으로 보존하며, 브라우저 `localStorage` 자체는 공식 산출물로 간주하지 않는다.
 

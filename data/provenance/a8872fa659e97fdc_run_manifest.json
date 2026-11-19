@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "pipeline": "cross_omics_kme_weighted_jaccard",
+  "generated_at_utc": "2026-11-18T23:26:18.606060+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "proteomics_condition": "04_ds3_mms30_med0p10",
+    "specimen_matching": "PB",
+    "gene_symbol_normalization": "trim and uppercase",
+    "proteomics_duplicate_probe_collapse": "highest signed kME across all proper modules",
+    "weight": "absolute own-module kME",
+    "global_figure_vmax": 0.3133996733854167
+  },
+  "generation_rules": {
+    "formula": "sum(min(abs own-module kME RNA, abs own-module kME protein)) / sum(max(weights))",
+    "module_outside_weight": 0,
+    "unassigned": "raw-label-0 groups excluded",
+    "universe": "intersection of genes measurable in both assays for this transcript experiment",
+    "interpretation": "descriptive fuzzy-membership overlap; not formal WGCNA module preservation or disease association"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/02_hvg_top9000/cell_separate/PB/Classical_Monocytes/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 498816,
+      "sha256": "c115f09a26e914d60bb80f502d9153e0cf1f860dcd74cd8332e5fb6cc4d3faff"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/PB/04_ds3_mms30_med0p10/feature_module_kme.csv.gz",
+      "size_bytes": 751649,
+      "sha256": "a3ce3a950ca08f412d57f348dddb004917dd9fdeb7c31f899b170804e9cb4131"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/00_shared/proteomics_gene_collapse/PB_representative_gene_modules.csv.gz",
+      "size_bytes": 135247,
+      "sha256": "e6716a7b83fe4d6eea9d0cf003ae8392bc3685136e46fbbbaf940b64906ddd57"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/02_hvg_top9000/cell_separate/PB/Classical_Monocytes/module_pair_similarity.csv",
+      "size_bytes": 6651,
+      "sha256": "c20026e43db0d46fff4bf0409c723fd3a83fea4fdafb71c33363f4761a839b25"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/02_hvg_top9000/cell_separate/PB/Classical_Monocytes/transcript_module_best_matches.csv",
+      "size_bytes": 817,
+      "sha256": "bfe4a48bd40f3e0129504e60a051ec1b1200b44a36a6d22e28aab3eeb7dd371f"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/02_hvg_top9000/cell_separate/PB/Classical_Monocytes/reciprocal_best_gene_contributions.csv.gz",
+      "size_bytes": 13195,
+      "sha256": "dfb6f3caa17fb04e317037dc624df18ca21555773b35c5d8612127b6ce056d09"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/02_hvg_top9000/cell_separate/PB/Classical_Monocytes/gene_mapping_audit.json",
+      "size_bytes": 564,
+      "sha256": "04c0518dd8c1bddf09a0b570e16117cca56f4145e8a20cf36214b80751ba4af8"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/02_hvg_top9000/cell_separate/PB/Classical_Monocytes/kme_weighted_jaccard_heatmap.png",
+      "size_bytes": 163156,
+      "sha256": "efbe2482421621e5880e2d8c3e3c01f620a3ec89c1d71a3070765bd28852940d"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/02_hvg_top9000/cell_separate/PB/Classical_Monocytes/analysis_summary.json",
+      "size_bytes": 1148,
+      "sha256": "e9b0c32c9008f1bc9a40a46d7cc0af05cfbd41d39f91e01daa3a1b379b6036d7"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_cross_omics_kme_weighted_jaccard.py",
+      "size_bytes": 29342,
+      "sha256": "74665b21d86d0fcb4d5c42719eee72bfabd2c172231876f9e5fac161df867c42"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "seaborn": "0.13.2"
+    }
+  }
+}

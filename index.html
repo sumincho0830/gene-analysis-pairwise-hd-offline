@@ -487,12 +487,122 @@ th {
 .compare-card img { width: 100%; height: auto; margin-top: 10px; }
 .empty { padding: 70px 20px; color: var(--text-muted); text-align: center; }
 
+/* Cell-centric comparison ------------------------------------------------ */
+body[data-view="cell"] .run-only { display: none !important; }
+body[data-view="run"] .cell-only { display: none !important; }
+.cell-comparison {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 31px 32px 64px;
+  border-left: 1px solid var(--line-subtle);
+  border-right: 1px solid var(--line-subtle);
+}
+.comparison-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+.comparison-head h2 {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
+  line-height: 1.35;
+  font-weight: 400;
+}
+.comparison-counts {
+  color: var(--text-muted);
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.comparison-note {
+  margin: 11px 0 24px;
+  color: var(--text-muted);
+  font-size: .79rem;
+}
+.cell-comparison .artifact-tabs {
+  flex-wrap: wrap;
+  gap: 3px 20px;
+  overflow: visible;
+}
+.condition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 34px 28px;
+  align-items: start;
+}
+.condition-panel {
+  min-width: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-strong);
+}
+.condition-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 56px;
+  margin-bottom: 9px;
+}
+.condition-head h3 {
+  margin: 0 0 3px;
+  font-size: .91rem;
+  line-height: 1.4;
+  font-weight: 500;
+}
+.condition-meta {
+  color: var(--text-muted);
+  font-size: .76rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.condition-review {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: .72rem;
+  text-transform: uppercase;
+}
+.condition-review.use { color: var(--ok); }
+.condition-review.hold, .condition-review.reject { color: var(--warn); }
+.condition-viewer {
+  height: 370px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line-subtle);
+}
+.condition-viewer > a { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.condition-viewer img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; }
+.condition-viewer iframe { width: 100%; height: 100%; border: 0; background: var(--surface); }
+.condition-missing { color: var(--text-muted); font-size: .8rem; text-align: center; padding: 30px; }
+.condition-links {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: .77rem;
+}
+.condition-links a, .condition-links button {
+  padding: 0 0 2px;
+  border: 0;
+  border-bottom: 1px solid #aaa;
+  background: transparent;
+  color: var(--link);
+  cursor: pointer;
+  text-decoration: none;
+}
+.condition-links a:hover, .condition-links button:hover { border-bottom-color: var(--text); }
+
 @media (max-width: 1180px) {
   :root { --list-width: 320px; }
   .metric-grid { grid-template-columns: repeat(4, minmax(105px, 1fr)); }
   .metric:nth-child(6n) { border-right: 1px solid var(--line-subtle); }
   .metric:nth-child(4n) { border-right: 0; }
   .lower { grid-template-columns: 1fr; gap: 24px; }
+  .condition-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 820px) {
@@ -513,6 +623,10 @@ th {
   .metric:nth-child(4n) { border-right: 1px solid var(--line-subtle); }
   .metric:nth-child(3n) { border-right: 0; }
   .viewer { min-height: 300px; }
+  .cell-comparison { padding: 25px 18px 48px; border-left: 0; border-right: 0; }
+  .comparison-head { display: block; }
+  .comparison-counts { margin-top: 8px; text-align: left; }
+  .condition-viewer { height: 460px; }
 }
 
 @media (max-width: 520px) {
@@ -524,6 +638,7 @@ th {
   .metric:nth-child(3n) { border-right: 1px solid var(--line-subtle); }
   .metric:nth-child(2n) { border-right: 0; }
   .artifact-tabs { gap: 17px; }
+  .condition-viewer { height: 340px; }
 }
 
 @media print {
@@ -537,30 +652,69 @@ th {
 
 </style>
 </head>
-<body>
+<body data-view="cell">
 <header class="top"><h1>Experiment inspection dashboard</h1><div class="sub" id="sourceLine"></div></header>
 <section class="kpis" id="kpis"></section>
 <div class="toolbar">
-  <select id="source"><option value="">All sources</option></select><select id="threshold"><option value="">All thresholds</option></select><select id="strategy"><option value="">All strategies</option></select><select id="mode"><option value="">All modes</option></select><select id="specimen"><option value="">All specimens</option></select><select id="cell"><option value="">All cell types</option></select><select id="status"><option value="">All statuses</option></select><select id="decision"><option value="">All decisions</option><option value="unreviewed">Unreviewed</option><option value="use">Use</option><option value="hold">Hold</option><option value="reject">Do not use</option></select><select id="sort"><option value="default">Default order</option><option value="modules_desc">Final modules ↓</option><option value="unassigned_desc">Unassigned ↓</option><option value="runtime_desc">Runtime ↓</option></select><input id="search" placeholder="Search cell type or network"><span class="spacer"></span><button id="nextUnreviewed">Next unreviewed</button><button id="showCompare">Compare <span id="compareCount">0</span></button><button id="exportReview">Export review CSV</button><label><button type="button" id="importButton">Import review CSV</button><input id="importReview" type="file" accept=".csv" hidden></label>
+  <select id="viewMode"><option value="cell">Cell type comparison</option><option value="run">Individual run inspection</option></select><select id="source"><option value="">All sources</option></select><select id="cell"><option value="">Choose cell type</option></select><select class="run-only" id="threshold"><option value="">All thresholds</option></select><select class="run-only" id="strategy"><option value="">All strategies</option></select><select class="run-only" id="mode"><option value="">All modes</option></select><select class="run-only" id="specimen"><option value="">All specimens</option></select><select class="run-only" id="status"><option value="">All statuses</option></select><select class="run-only" id="decision"><option value="">All decisions</option><option value="unreviewed">Unreviewed</option><option value="use">Use</option><option value="hold">Hold</option><option value="reject">Do not use</option></select><select class="run-only" id="sort"><option value="default">Default order</option><option value="modules_desc">Final modules ↓</option><option value="unassigned_desc">Unassigned ↓</option><option value="runtime_desc">Runtime ↓</option></select><input class="run-only" id="search" placeholder="Search cell type or network"><span class="spacer"></span><button class="run-only" id="nextUnreviewed">Next unreviewed</button><button class="run-only" id="showCompare">Compare <span id="compareCount">0</span></button><button id="exportReview">Export review CSV</button><label><button type="button" id="importButton">Import review CSV</button><input id="importReview" type="file" accept=".csv" hidden></label>
 </div>
-<section class="compare" id="comparePanel"><div class="detail-head"><h2>Comparison workspace</h2><div class="actions"><button id="clearCompare">Clear</button></div></div><div class="compare-grid" id="compareGrid"></div></section>
-<main class="layout"><aside class="list"><div class="list-head" id="listCount"></div><div id="recordList"></div></aside><section class="detail" id="detail"></section></main>
+<main class="cell-comparison cell-only" id="cellComparison"></main>
+<section class="compare run-only" id="comparePanel"><div class="detail-head"><h2>Comparison workspace</h2><div class="actions"><button id="clearCompare">Clear</button></div></div><div class="compare-grid" id="compareGrid"></div></section>
+<main class="layout run-only" id="runInspection"><aside class="list"><div class="list-head" id="listCount"></div><div id="recordList"></div></aside><section class="detail" id="detail"></section></main>
 <script src="dashboard-data.js"></script>
 <script>
-const bundle=window.EXPERIMENT_DASHBOARD_DATA;const records=bundle.records;const storageKey=`experiment-review:${bundle.schema_version}:${bundle.run_root}`;let reviews=JSON.parse(localStorage.getItem(storageKey)||'{}');let selectedId=records[0]?.id||null;let artifactChoice={};let compareIds=[];
+const bundle=window.EXPERIMENT_DASHBOARD_DATA;const records=bundle.records;const storageKey=`experiment-review:${bundle.schema_version}:${bundle.run_root}`;let reviews=JSON.parse(localStorage.getItem(storageKey)||'{}');let selectedId=records[0]?.id||null;let artifactChoice={};let comparisonArtifactChoice=null;let compareIds=[];
 const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const fmt=(v,d=2)=>v===null||v===undefined||v===''?'—':typeof v==='number'?v.toLocaleString(undefined,{maximumFractionDigits:d}):esc(v);const stat=v=>v===null||v===undefined||v===''?'—':typeof v==='number'&&Math.abs(v)>0&&Math.abs(v)<0.0001?v.toExponential(2):fmt(v,4);const pct=v=>v===null||v===undefined?'—':`${(v*100).toFixed(1)}%`;
+const artifactOrder=['feature_selection','before_heatmap','before_pca','before_pca_3d','cut_diagnostic','selected_cut','after_heatmap','after_pca','after_pca_3d','soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity'];
 function reviewOf(id){return reviews[id]||{decision:'unreviewed',notes:'',checks:{power:false,modules:false,outliers:false,ready:false},updated_at:null}}
 function saveReview(id,patch){reviews[id]={...reviewOf(id),...patch,updated_at:new Date().toISOString()};localStorage.setItem(storageKey,JSON.stringify(reviews));renderAll()}
 function unique(path){return [...new Set(records.map(r=>path(r)).filter(Boolean))].sort()}
 function fillSelect(id,values){const node=$(id);for(const v of values){const o=document.createElement('option');o.value=v;o.textContent=v;node.appendChild(o)}node.addEventListener('change',renderAll)}
-fillSelect('source',bundle.sources.map(s=>s.id));fillSelect('threshold',unique(r=>r.dimensions.threshold));fillSelect('strategy',unique(r=>r.dimensions.strategy));fillSelect('mode',unique(r=>r.dimensions.mode));fillSelect('specimen',unique(r=>r.dimensions.specimen));fillSelect('cell',unique(r=>r.dimensions.cell_type));fillSelect('status',unique(r=>r.status));['decision','sort'].forEach(id=>$(id).addEventListener('change',renderAll));$('search').addEventListener('input',renderAll);
+fillSelect('source',bundle.sources.map(s=>s.id));fillSelect('threshold',unique(r=>r.dimensions.threshold));fillSelect('strategy',unique(r=>r.dimensions.strategy));fillSelect('mode',unique(r=>r.dimensions.mode));fillSelect('specimen',unique(r=>r.dimensions.specimen));fillSelect('cell',unique(r=>r.dimensions.cell_type));fillSelect('status',unique(r=>r.status));for(const option of $('source').options){const source=bundle.sources.find(s=>s.id===option.value);if(source)option.textContent=source.label}for(const option of $('cell').options)if(option.value)option.textContent=prettyDimension(option.value);['decision','sort'].forEach(id=>$(id).addEventListener('change',renderAll));$('search').addEventListener('input',renderAll);
+$('viewMode').addEventListener('change',renderAll);
+const transcriptomicsSource=bundle.sources.find(s=>s.id.includes('transcriptomics'))?.id||bundle.sources[0]?.id||'';$('source').value=transcriptomicsSource;if([...$('cell').options].some(o=>o.value==='B_cell'))$('cell').value='B_cell';
+function ensureCellForSource(){const source=$('source').value,available=unique(r=>(!source||r.source_id===source)?r.dimensions.cell_type:null);if(!available.includes($('cell').value))$('cell').value=available.includes('B_cell')?'B_cell':available[0]||''}
+$('source').addEventListener('change',()=>{if($('viewMode').value==='cell'){ensureCellForSource();renderAll()}});
 function filtered(){const q=$('search').value.trim().toLowerCase();let out=records.filter(r=>(!$('source').value||r.source_id===$('source').value)&&(!$('threshold').value||r.dimensions.threshold===$('threshold').value)&&(!$('strategy').value||r.dimensions.strategy===$('strategy').value)&&(!$('mode').value||r.dimensions.mode===$('mode').value)&&(!$('specimen').value||r.dimensions.specimen===$('specimen').value)&&(!$('cell').value||r.dimensions.cell_type===$('cell').value)&&(!$('status').value||r.status===$('status').value)&&(!$('decision').value||reviewOf(r.id).decision===$('decision').value)&&(!q||`${r.title} ${r.provenance.network_id} ${r.dimensions.strategy}`.toLowerCase().includes(q)));const s=$('sort').value;if(s==='modules_desc')out.sort((a,b)=>(b.metrics.final_modules??-1)-(a.metrics.final_modules??-1));if(s==='unassigned_desc')out.sort((a,b)=>(b.metrics.unassigned_fraction??-1)-(a.metrics.unassigned_fraction??-1));if(s==='runtime_desc')out.sort((a,b)=>(b.metrics.runtime_seconds??-1)-(a.metrics.runtime_seconds??-1));return out}
+function prettyDimension(v){return String(v??'—').replace(/^\d+_/,'').replaceAll('_',' ')}
+function comparisonRows(){
+  const source=$('source').value,cell=$('cell').value;
+  return records.filter(r=>(!source||r.source_id===source)&&cell&&r.dimensions.cell_type===cell).sort((a,b)=>{
+    const numberIn=v=>Number(String(v??'').match(/\d+/)?.[0]??999),specimenRank=v=>v==='CSF'?0:v==='PB'?1:2;
+    const ka=[numberIn(a.dimensions.threshold),numberIn(a.dimensions.strategy),String(a.dimensions.mode??''),specimenRank(a.dimensions.specimen),String(a.provenance.condition??'')];
+    const kb=[numberIn(b.dimensions.threshold),numberIn(b.dimensions.strategy),String(b.dimensions.mode??''),specimenRank(b.dimensions.specimen),String(b.provenance.condition??'')];
+    for(let i=0;i<ka.length;i++){const d=typeof ka[i]==='number'?ka[i]-kb[i]:ka[i].localeCompare(kb[i]);if(d)return d}return 0;
+  });
+}
+function comparisonArtifacts(rows){
+  const byId=new Map();for(const r of rows)for(const a of r.artifacts)if(!byId.has(a.id))byId.set(a.id,a);
+  return [...byId.values()].sort((a,b)=>{const ai=artifactOrder.indexOf(a.id),bi=artifactOrder.indexOf(b.id);return (ai<0?999:ai)-(bi<0?999:bi)||a.label.localeCompare(b.label)});
+}
+function renderCellComparison(){
+  const rows=comparisonRows(),artifacts=comparisonArtifacts(rows),cell=$('cell').value;
+  if(!cell){$('cellComparison').innerHTML='<div class="empty">Choose one cell type to compare its conditions.</div>';return}
+  if(!rows.length){$('cellComparison').innerHTML='<div class="empty">No experiment conditions are available for this source and cell type.</div>';return}
+  if(!comparisonArtifactChoice||!artifacts.some(a=>a.id===comparisonArtifactChoice))comparisonArtifactChoice=artifacts[0]?.id||null;
+  const chosenMeta=artifacts.find(a=>a.id===comparisonArtifactChoice),available=rows.filter(r=>r.artifacts.some(a=>a.id===comparisonArtifactChoice)).length;
+  const tabs=artifacts.map(a=>`<button data-comparison-artifact="${esc(a.id)}" class="${a.id===comparisonArtifactChoice?'active':''}">${esc(a.label)}</button>`).join('');
+  const panels=rows.map(r=>{
+    const a=r.artifacts.find(x=>x.id===comparisonArtifactChoice),rv=reviewOf(r.id);
+    const condition=[r.dimensions.threshold,r.dimensions.strategy,r.dimensions.specimen].filter(Boolean).map(prettyDimension).join(' · ');
+    const secondary=[r.dimensions.mode,`n=${fmt(r.metrics.samples)}`,`genes=${fmt(r.metrics.genes)}`,`modules=${fmt(r.metrics.dynamic_modules)}→${fmt(r.metrics.final_modules)}`].filter(Boolean).map(prettyDimension).join(' · ');
+    const visual=!a?'<div class="condition-missing">This artifact was not generated for this condition.</div>':a.kind==='html'?`<iframe loading="lazy" src="${esc(a.path)}" title="${esc(a.label)} · ${esc(condition)}"></iframe>`:`<a href="${esc(a.path)}" target="_blank"><img loading="lazy" src="${esc(a.path)}" alt="${esc(a.label)} · ${esc(condition)}"></a>`;
+    const open=a?`<a href="${esc(a.path)}" target="_blank">Open artifact</a>`:'';
+    return `<article class="condition-panel"><div class="condition-head"><div><h3>${esc(condition||r.title)}</h3><div class="condition-meta">${secondary}</div></div><span class="condition-review ${esc(rv.decision)}">${esc(rv.decision)}</span></div><div class="condition-viewer">${visual}</div><div class="condition-links">${open}<button data-open-record="${esc(r.id)}">Inspect this run</button></div></article>`;
+  }).join('');
+  $('cellComparison').innerHTML=`<div class="comparison-head"><div><h2>${esc(prettyDimension(cell))}</h2><div class="sub">The same output is aligned across every saved condition for this cell type.</div></div><div class="comparison-counts">${rows.length} conditions · ${artifacts.length} output tabs · ${available}/${rows.length} shown in this tab</div></div><div class="artifact-tabs">${tabs}</div><div class="comparison-note">Current output: <b>${esc(chosenMeta?.label||'—')}</b> · sorted by threshold → feature strategy → specimen, so matched CSF/PB conditions stay adjacent.</div><section class="condition-grid">${panels}</section>`;
+  document.querySelectorAll('[data-comparison-artifact]').forEach(n=>n.onclick=()=>{comparisonArtifactChoice=n.dataset.comparisonArtifact;renderCellComparison()});
+  document.querySelectorAll('[data-open-record]').forEach(n=>n.onclick=()=>{selectedId=n.dataset.openRecord;$('viewMode').value='run';renderAll()});
+}
 function renderKpis(){const complete=records.filter(r=>r.status==='complete_findModules').length,collapsed=records.filter(r=>r.metrics.collapsed).length,reviewed=records.filter(r=>reviewOf(r.id).decision!=='unreviewed').length,holds=records.filter(r=>reviewOf(r.id).decision==='hold').length,uses=records.filter(r=>reviewOf(r.id).decision==='use').length;const values=[[records.length,'Experiment records'],[complete,'findModules complete'],[collapsed,'Collapsed'],[reviewed,'Reviewed'],[uses,'Use'],[holds,'Hold']];$('kpis').innerHTML=values.map(([v,l])=>`<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('')}
 function renderList(){const rows=filtered();$('listCount').textContent=`${rows.length} / ${records.length} records`;if(rows.length&&!rows.some(r=>r.id===selectedId))selectedId=rows[0].id;$('recordList').innerHTML=rows.map(r=>{const rv=reviewOf(r.id),warn=r.flags.some(f=>f.level==='warning');return `<button class="record ${r.id===selectedId?'active':''}" data-id="${esc(r.id)}"><div class="record-title">${esc(r.title)} ${warn?'<span class="pill warn">flag</span>':''}</div><div class="record-meta"><span>${esc(r.dimensions.threshold)}</span><span>${esc(r.dimensions.strategy)}</span><span>${esc(r.dimensions.mode)}</span></div><div class="record-metrics"><span>n=${fmt(r.metrics.samples)}</span><span>genes=${fmt(r.metrics.genes)}</span><span>dynamic=${fmt(r.metrics.dynamic_modules)}</span><span>final=${fmt(r.metrics.final_modules)}</span><span class="pill ${rv.decision==='use'?'ok':rv.decision==='hold'||rv.decision==='reject'?'warn':''}">${esc(rv.decision)}</span></div></button>`}).join('')||'<div class="empty">No matching experiments</div>';document.querySelectorAll('.record').forEach(n=>n.onclick=()=>{selectedId=n.dataset.id;renderAll()})}
 function metric(label,value){return `<div class="metric"><div class="label">${esc(label)}</div><div class="value">${value}</div></div>`}
 function renderDetail(){const r=records.find(x=>x.id===selectedId);if(!r){$('detail').innerHTML='<div class="empty">Select an experiment</div>';return}const rv=reviewOf(r.id),artifacts=r.artifacts;if(!artifactChoice[r.id]||!artifacts.some(a=>a.id===artifactChoice[r.id]))artifactChoice[r.id]=(artifacts.find(a=>a.id==='diagnosis_pairwise_hd')||artifacts.find(a=>a.id==='cross_omics_similarity')||artifacts.find(a=>a.id==='diagnosis_heatmap')||artifacts.find(a=>a.id==='me_dendrogram')||artifacts[0])?.id;const chosen=artifacts.find(a=>a.id===artifactChoice[r.id]);const metrics=[['Samples',fmt(r.metrics.samples)],['Genes',fmt(r.metrics.genes)],['Power',fmt(r.metrics.selected_power)],['Selected SFT R²',fmt(r.metrics.selected_power_sft_r2,3)],['Mean connectivity',fmt(r.metrics.selected_power_mean_connectivity,1)],['Dynamic modules',fmt(r.metrics.dynamic_modules)],['Final modules',fmt(r.metrics.final_modules)],['Unassigned',pct(r.metrics.unassigned_fraction)],['Largest module',pct(r.metrics.largest_module_fraction)],['Median |kME|',fmt(r.metrics.median_abs_kme,3)],['Diagnosis tests',fmt(r.metrics.diagnosis_tests)],['Min diagnosis q',stat(r.metrics.minimum_diagnosis_q)],['Common omics genes',fmt(r.metrics.cross_omics_common_genes)],['Max weighted Jaccard',fmt(r.metrics.cross_omics_max_similarity,3)],['Median best match',fmt(r.metrics.cross_omics_median_best_similarity,3)],['Reciprocal pairs',fmt(r.metrics.cross_omics_reciprocal_pairs)],['Samples cut',fmt(r.metrics.samples_removed_by_cut)],['Runtime (s)',fmt(r.metrics.runtime_seconds,1)]];const groups={};for(const f of r.files)(groups[f.category]??=[]).push(f);const proper=r.modules.filter(m=>!m.fully_unassigned).sort((a,b)=>(b.features??0)-(a.features??0));$('detail').innerHTML=`<div class="detail-head"><div><h2>${esc(r.title)}</h2><div class="sub">${esc(r.provenance.network_id)} · ${esc(r.status)}</div></div><div class="actions"><button id="addCompare">${compareIds.includes(r.id)?'Remove from compare':'Add to compare'}</button></div></div><div class="flags">${r.flags.map(f=>`<span class="flag">${esc(f.label)}</span>`).join('')}</div><div class="metric-grid">${metrics.map(x=>metric(...x)).join('')}</div><section class="review"><div><b>Decision</b><div class="decision-row">${[['use','Use'],['hold','Hold'],['reject','Do not use'],['unreviewed','Clear']].map(([v,l])=>`<button data-decision="${v}" class="${rv.decision===v?'selected':''}">${l}</button>`).join('')}</div><div class="checklist"><label><input type="checkbox" data-check="power" ${rv.checks.power?'checked':''}> Soft-threshold behavior inspected</label><label><input type="checkbox" data-check="modules" ${rv.checks.modules?'checked':''}> ME merging and module sizes inspected</label><label><input type="checkbox" data-check="outliers" ${rv.checks.outliers?'checked':''}> Sample/outlier evidence inspected</label><label><input type="checkbox" data-check="ready" ${rv.checks.ready?'checked':''}> Ready for downstream analysis</label></div></div><div><b>Review notes</b><textarea id="reviewNotes" placeholder="Why use, hold, or reject this run?">${esc(rv.notes)}</textarea><div class="sub">Saved in this browser · ${rv.updated_at?`updated ${esc(rv.updated_at)}`:'not reviewed yet'}</div></div></section><h3 class="section-title">Visual evidence</h3><div class="artifact-tabs">${artifacts.map(a=>`<button data-artifact="${a.id}" class="${a.id===chosen?.id?'active':''}">${esc(a.label)}</button>`).join('')}</div><div class="viewer">${!chosen?'<div class="empty">No visual artifact</div>':chosen.kind==='html'?`<div style="width:100%"><div class="open"><a href="${esc(chosen.path)}" target="_blank">Open interactive result in a new tab</a></div><iframe src="${esc(chosen.path)}"></iframe></div>`:`<a href="${esc(chosen.path)}" target="_blank"><img src="${esc(chosen.path)}" alt="${esc(chosen.label)}"></a>`}</div><div class="lower"><div><h3 class="section-title">Final proper modules</h3><div class="table-wrap"><table><thead><tr><th>Module</th><th>Features</th><th>Median |kME|</th></tr></thead><tbody>${proper.map(m=>`<tr><td><span class="swatch" style="background:${esc(m.color)}"></span>${esc(m.color)}</td><td>${fmt(m.features)}</td><td>${fmt(m.median_abs_kme,3)}</td></tr>`).join('')}</tbody></table></div></div><div><h3 class="section-title">Files and provenance</h3><div class="files">${Object.entries(groups).map(([g,fs])=>`<details ${g==='summary'?'open':''}><summary>${esc(g)} (${fs.length})</summary>${fs.map(f=>`<a href="${esc(f.path)}" target="_blank">${esc(f.label)}</a>`).join('')}</details>`).join('')}<details><summary>Parameters</summary>${Object.entries(r.provenance).map(([k,v])=>`<div><b>${esc(k)}</b>: ${fmt(v)}</div>`).join('')}</details></div></div></div>`;document.querySelectorAll('[data-decision]').forEach(n=>n.onclick=()=>saveReview(r.id,{decision:n.dataset.decision}));document.querySelectorAll('[data-check]').forEach(n=>n.onchange=()=>saveReview(r.id,{checks:{...reviewOf(r.id).checks,[n.dataset.check]:n.checked}}));$('reviewNotes').onchange=e=>saveReview(r.id,{notes:e.target.value});document.querySelectorAll('[data-artifact]').forEach(n=>n.onclick=()=>{artifactChoice[r.id]=n.dataset.artifact;renderDetail()});$('addCompare').onclick=()=>{compareIds=compareIds.includes(r.id)?compareIds.filter(x=>x!==r.id):[...compareIds,r.id].slice(-4);renderAll()}}
 function renderCompare(){const panel=$('comparePanel');$('compareCount').textContent=compareIds.length;if(!compareIds.length){panel.classList.remove('visible');$('compareGrid').innerHTML='';return}const selected=compareIds.map(id=>records.find(r=>r.id===id)).filter(Boolean);$('compareGrid').innerHTML=selected.map(r=>{const a=r.artifacts.find(x=>x.id==='me_dendrogram')||r.artifacts[0];return `<div class="compare-card"><h3>${esc(r.title)}</h3><div class="sub">${esc(r.dimensions.strategy)} · dynamic ${fmt(r.metrics.dynamic_modules)} → final ${fmt(r.metrics.final_modules)}</div>${a?`<a href="${esc(a.path)}" target="_blank"><img src="${esc(a.path)}" alt="${esc(a.label)}"></a>`:''}</div>`}).join('')}
-function renderAll(){renderKpis();renderList();renderDetail();renderCompare();$('sourceLine').textContent=`Schema ${bundle.schema_version} · generated ${bundle.generated_at_utc} · ${bundle.sources.map(s=>s.label).join(', ')}`}
+function renderAll(){const view=$('viewMode').value;document.body.dataset.view=view;renderKpis();if(view==='cell'){renderCellComparison()}else{renderList();renderDetail();renderCompare()}$('sourceLine').textContent=`Schema ${bundle.schema_version} · generated ${bundle.generated_at_utc} · ${bundle.sources.map(s=>s.label).join(', ')}`}
 $('showCompare').onclick=()=>{$('comparePanel').classList.toggle('visible');$('comparePanel').scrollIntoView({behavior:'smooth'})};$('clearCompare').onclick=()=>{compareIds=[];renderAll()};$('nextUnreviewed').onclick=()=>{const rows=filtered(),i=Math.max(-1,rows.findIndex(r=>r.id===selectedId));const next=[...rows.slice(i+1),...rows.slice(0,i+1)].find(r=>reviewOf(r.id).decision==='unreviewed');if(next){selectedId=next.id;renderAll()}};
 function csvCell(v){const s=String(v??'');return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s}function exportReview(){const head=['record_id','source_id','network_id','decision','power_checked','modules_checked','outliers_checked','ready_checked','notes','updated_at'];const rows=records.map(r=>{const v=reviewOf(r.id);return [r.id,r.source_id,r.provenance.network_id,v.decision,v.checks.power,v.checks.modules,v.checks.outliers,v.checks.ready,v.notes,v.updated_at]}).filter(x=>x[3]!=='unreviewed'||x[8]).map(x=>x.map(csvCell).join(','));const blob=new Blob([[head.join(','),...rows].join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`experiment_review_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(a.href)}$('exportReview').onclick=exportReview;$('importButton').onclick=()=>$('importReview').click();
 function parseCSV(text){const rows=[];let row=[],cell='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(quoted&&c==='"'&&text[i+1]==='"'){cell+='"';i++}else if(c==='"'){quoted=!quoted}else if(c===','&&!quoted){row.push(cell);cell=''}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x!==''))rows.push(row);row=[];cell=''}else cell+=c}row.push(cell);if(row.some(x=>x!==''))rows.push(row);return rows}$('importReview').onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{const rows=parseCSV(reader.result),head=rows.shift(),ix=Object.fromEntries(head.map((x,i)=>[x,i]));for(const r of rows){const id=r[ix.record_id];if(!records.some(x=>x.id===id))continue;reviews[id]={decision:r[ix.decision]||'unreviewed',checks:{power:r[ix.power_checked]==='true',modules:r[ix.modules_checked]==='true',outliers:r[ix.outliers_checked]==='true',ready:r[ix.ready_checked]==='true'},notes:r[ix.notes]||'',updated_at:r[ix.updated_at]||new Date().toISOString()}}localStorage.setItem(storageKey,JSON.stringify(reviews));renderAll()};reader.readAsText(file,'utf-8')};renderAll();

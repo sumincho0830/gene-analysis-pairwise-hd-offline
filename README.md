@@ -1,6 +1,7 @@
-# Pairwise disease-vs-HD module diagnosis offline release
+# Gene-analysis complete offline inspection dashboard
 
-이 저장소는 `results_20261119`의 **집계된 module–diagnosis 결과만** 오프라인에서 검토하기 위한 배포본입니다.
+이 저장소는 `results_20261119`에서 로컬로 보던 experiment inspection dashboard를
+다른 컴퓨터에서도 같은 구조로 검토하기 위한 **private offline bundle**입니다.
 
 ## 다른 컴퓨터에서 보기
 
@@ -10,24 +11,31 @@ cd gene-analysis-pairwise-hd-offline
 start index.html
 ```
 
-별도 Python 환경이나 web server가 필요하지 않습니다. 인터넷 연결을 끊은 상태에서도 `index.html`을 직접 열 수 있습니다.
+별도 Python 환경이나 web server가 필요하지 않습니다. `index.html`을 직접 열면
+기본 **Cell type comparison** 화면에서 동일 cell type의 모든 조건을 산출물 탭별로
+비교할 수 있습니다. **Individual run inspection**과 review CSV import/export도
+로컬 dashboard와 동일하게 유지됩니다.
 
-## 포함된 결과
+## 포함된 범위
 
-- 실험 record: 173개
-- `MS vs HD`, `MOGAD vs HD`, `NMOSD vs HD` heatmap
-- signed point-biserial `r`, two-sided `p`, within-network BH `q`
-- 질환별 집계 sample 수, module feature 수, 분석 summary와 provenance
-- 결과를 생성한 Python 코드와 단위 테스트
+- experiment records: 176
+- visual/interactive artifacts: 2741
+- downloadable CSV/JSON/provenance files: 5612
+- feature selection, before/after heatmap·PCA, interactive PCA 3D
+- sample-cut, soft threshold, gene/ME dendrogram, module sizes
+- module–diagnosis 및 RNA–protein module similarity
+- dashboard와 결과를 재생성하는 핵심 Python 코드와 pipeline 기록
 
-## 의도적으로 제외한 데이터
+PNG figure는 decoded pixel이 원본과 완전히 같은 lossless WebP로만 재포장했습니다.
+Plotly HTML은 저장소에 포함된 `assets/vendor/plotly.min.js`를 사용하므로 인터넷 없이
+회전·확대할 수 있습니다.
 
-- raw/formatted expression matrix
-- 개인 sample ID가 포함된 sample-level table
-- PyWGCNA `.p`, `.p.gz`, `.p.zst` 객체
-- 전체 feature-level kME table
+## 데이터 취급
 
-따라서 이 저장소는 **결과 열람과 방법 감사용**입니다. 분석을 처음부터 재실행하려면 별도로 보관된 원본 데이터와 전체 `results_20261119` 실행 디렉토리가 필요합니다.
+이 배포본은 현재 로컬 dashboard와 같은 inspection 경험을 보존하므로 interactive
+PCA hover와 일부 QC 파일에 source sample ID가 포함될 수 있습니다. 저장소를 private로
+유지하고 승인된 사용자에게만 접근 권한을 부여해야 합니다. raw/formatted expression
+matrix와 PyWGCNA pickle object는 포함하지 않습니다.
 
 ## 무결성 확인
 

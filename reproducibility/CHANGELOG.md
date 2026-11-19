@@ -1,5 +1,23 @@
 # Pipeline change log
 
+## 2026-11-19 — Cell type 중심 조건별 산출물 비교 화면 추가
+
+- 기존의 단일 실험 record 중심 dashboard에 `Cell type comparison` 기본 화면을 추가했다.
+- cell type을 한 번 선택하면 모든 threshold, feature-selection 전략과 CSF/PB 조건을 유지하고, 산출물 종류만 탭으로 전환하도록 화면 축을 바꿨다.
+- 각 탭에는 같은 산출물을 모든 조건에 대해 2열로 배치하고, 동일 threshold·전략의 CSF/PB가 연속해서 보이도록 자연 정렬했다.
+- transcriptomics B cell 기준 12개 조건과 16개 artifact 탭이 한 페이지에서 동작하며, 각 panel에서 원본 artifact 또는 기존 단일-record inspection으로 이동할 수 있다.
+- 기존 review `localStorage`, CSV import/export, 개별 실험 상세, module table, provenance와 최대 4개 임의 비교 기능은 보존했다.
+- Python compile, 176-record link validation과 headless Edge 실제 렌더링을 통과했고 preview PNG를 최신 화면으로 갱신했다.
+
+## 2026-11-19 — 예측 `MEDissThres=0.10` 실제 재계산 추가
+
+- ME dendrogram 후보 120개에 대해 `deepSplit=2`, `minModuleSize=50`, power, adjacency, TOM, gene tree와 dynamic module은 유지하고 `MEDissThres`만 0.20에서 0.10으로 변경했다.
+- 전체 network를 처음부터 중복 계산하지 않고, 변경된 단계에 해당하는 PyWGCNA 공식 `mergeCloseModules(cutHeight=0.10, iterate=True)`를 저장된 dynamic module에 실행했다.
+- 후보 계산 전 `MEDissThres=0.20`으로 기존 baseline partition과 exact color label을 재현하는 gate를 추가했고 120/120개가 통과했다.
+- 120개 실제 계산은 failure 0개로 완료됐다. 총 module 수는 baseline 1,774개, 단순 dendrogram 예측 2,363개, 실제 iterative merge 2,339개였고 baseline collapse 후보 4개는 모두 해소됐다.
+- 각 network의 `05_find_modules/02_predicted_ds2_mms50_med0p10/`에 baseline과 동일한 compact CSV/JSON/figure를 저장했다.
+- 전역 비교 CSV/JSON과 dashboard를 갱신해 baseline, 예측값, 실제값 및 예측 오차를 한 화면에서 확인할 수 있게 했다.
+
 ## 2026-11-19 — Pairwise-HD offline GitHub release 추가
 
 - 41GB 전체 실행 결과 대신 pairwise-HD 집계 결과만 포함한 약 41MB private 배포 저장소를 만들었다.

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "pipeline": "cross_omics_kme_weighted_jaccard",
+  "generated_at_utc": "2026-11-18T23:25:56.813425+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "proteomics_condition": "04_ds3_mms30_med0p10",
+    "specimen_matching": "CSF",
+    "gene_symbol_normalization": "trim and uppercase",
+    "proteomics_duplicate_probe_collapse": "highest signed kME across all proper modules",
+    "weight": "absolute own-module kME",
+    "global_figure_vmax": 0.3133996733854167
+  },
+  "generation_rules": {
+    "formula": "sum(min(abs own-module kME RNA, abs own-module kME protein)) / sum(max(weights))",
+    "module_outside_weight": 0,
+    "unassigned": "raw-label-0 groups excluded",
+    "universe": "intersection of genes measurable in both assays for this transcript experiment",
+    "interpretation": "descriptive fuzzy-membership overlap; not formal WGCNA module preservation or disease association"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/CSF/cDCs/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 210038,
+      "sha256": "00e1eeff0d6abdb6c12e84405ba960a5e95d9f2e5b6d859d2a75739171f4e98c"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/feature_module_kme.csv.gz",
+      "size_bytes": 1051243,
+      "sha256": "ef89ba04cd8bac2781ae874e4af88d209f43fdcaf412456adce7b95147345257"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/00_shared/proteomics_gene_collapse/CSF_representative_gene_modules.csv.gz",
+      "size_bytes": 140705,
+      "sha256": "ce463516c7fc934ab4531cccbfaf87588bfc99c4150da2528de1cb3898427411"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/CSF/cDCs/module_pair_similarity.csv",
+      "size_bytes": 7116,
+      "sha256": "52179521563afc8ea4fc2fe22167e636b1cc4bae4d45f1ed5ba4d1df5f7d0f75"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/CSF/cDCs/transcript_module_best_matches.csv",
+      "size_bytes": 679,
+      "sha256": "22ac66628b5024985636d813c9384d1fb1522bb799f76f8948e5244b5ab07793"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/CSF/cDCs/reciprocal_best_gene_contributions.csv.gz",
+      "size_bytes": 2485,
+      "sha256": "e45cc3b86259e44dc05b36ac1e42481a77b14e986d8b38bf4223ba6bcd318208"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/CSF/cDCs/gene_mapping_audit.json",
+      "size_bytes": 565,
+      "sha256": "1ad35f701e52b2212d021d9b5d5f0d7bb64db80cb758dec44ca67e53480ab5c3"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/CSF/cDCs/kme_weighted_jaccard_heatmap.png",
+      "size_bytes": 181624,
+      "sha256": "665c1acfd8d2cc3fdd350b728ecddb4326bb8f227d9923167a10af2badd48357"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_separate/CSF/cDCs/analysis_summary.json",
+      "size_bytes": 1063,
+      "sha256": "74a996a22bfcfe92476b419846f710f914094a5b84abb8a05f942518ec01505e"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_cross_omics_kme_weighted_jaccard.py",
+      "size_bytes": 29342,
+      "sha256": "74665b21d86d0fcb4d5c42719eee72bfabd2c172231876f9e5fac161df867c42"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "seaborn": "0.13.2"
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "pipeline": "proteomics_official_kme_module_diagnosis",
+  "generated_at_utc": "2026-11-18T23:07:00.136867+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "trait": "diagnosis",
+    "alternative": "two-sided",
+    "kme_chunk_size": 1000,
+    "specimen": "CSF",
+    "condition": "04_ds3_mms30_med0p10"
+  },
+  "generation_rules": {
+    "expression": "stored selected-cut PyWGCNA datExpr; no additional transform/filter/imputation",
+    "module_assignment": "saved final findModules module_color aligned by feature ID",
+    "module_eigengene": "saved final findModules ME matrix aligned by sample ID; raw-label-0 fully unassigned eigengene excluded like intended MEgrey handling",
+    "kME": "public PyWGCNA.CalculateSignedKME called per independent feature chunk; all feature-to-ME correlations retained",
+    "diagnosis_encoding": "public PyWGCNA.getDatTraits values; object dtype cast to float for pandas 3 / SciPy 1.17 compatibility",
+    "heatmap": "public PyWGCNA.module_trait_relationships_heatmap with diagnosis and two-sided Pearson test",
+    "heatmap_annotation": "official unadjusted Pearson p-value; supplemental BH-FDR is CSV only"
+  },
+  "inputs": [
+    {
+      "path": "experiments/01_batch_corrected/proteomics/03_preprocess/CSF/02_selected_cut/PROT_CSF_selected_cut.p",
+      "size_bytes": 21870090,
+      "sha256": "923f06dae01471f8ecd290735a81975428e197f6905440742ac25ae6afa95cb1"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/05_find_modules/CSF/04_ds3_mms30_med0p10/feature_module_kme.csv",
+      "size_bytes": 2585016,
+      "sha256": "ca745f33c6ed102b14720d214807353666fdee2a6a22f277680fbf2443ac413f"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/05_find_modules/CSF/04_ds3_mms30_med0p10/module_eigengenes.csv",
+      "size_bytes": 116481,
+      "sha256": "2cd75314b64d722a27ec0b77b4feb5ddc16f2772af0de1e0bc564890315ff78d"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/feature_module_kme.csv.gz",
+      "size_bytes": 1051243,
+      "sha256": "ef89ba04cd8bac2781ae874e4af88d209f43fdcaf412456adce7b95147345257"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/module_kme_summary.csv",
+      "size_bytes": 1197,
+      "sha256": "710cbf2f016d83f34b1f48df5d01a0158e85c09c2ffe48ee6221186ecf8d9dfe"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/module_diagnosis_correlations.csv",
+      "size_bytes": 1723,
+      "sha256": "160e425490351fd3b9a3a4d705d51e50a7b31353b0afe5c9c0118f2a3bbbe686"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/module_diagnosis_pvalues.csv",
+      "size_bytes": 1675,
+      "sha256": "2aaaed43ce3b7ea63c0d989ea3ca047d094e603a30aae8ab95428833f840f2b9"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/module_diagnosis_statistics.csv",
+      "size_bytes": 6458,
+      "sha256": "dc02b40106cca26bfd3c4f92a2e3e534f2d636c3625eafa41f8656ae22107777"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/diagnosis_trait_encoding.csv",
+      "size_bytes": 9536,
+      "sha256": "1778fd3fdeee5bdad85f0721c7f7f1753f73f985ef3dd60740e1f8611b9b9b9c"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/analysis_summary.json",
+      "size_bytes": 1296,
+      "sha256": "02cb9ad84363975d16e20f7be8c6db5b1abdc9cd35018bdaf177354ec55af376"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/figures/module_diagnosis_heatmap.png",
+      "size_bytes": 325853,
+      "sha256": "ef93b9df4c20781790f2e91e9b85386baeee8774e8926f099ae566e482618240"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_official_kme_module_diagnosis.py",
+      "size_bytes": 26252,
+      "sha256": "4a731c33107e71ff07e419db9150df8f08a5e85e6672a292056d756f5ca7a75d"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "seaborn": "0.13.2",
+      "PyWGCNA": "2.2.1",
+      "anndata": "0.12.6"
+    }
+  }
+}
