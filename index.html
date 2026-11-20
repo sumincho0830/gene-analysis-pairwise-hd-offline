@@ -677,6 +677,13 @@ body[data-view="run"] .cell-only { display: none !important; }
 .module-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .module-pagination button { padding: 5px 9px; }
 .module-open-button { margin-left: 7px; padding: 4px 7px !important; font-size: 12px; }
+.overlap-dialog { width: min(680px, 94vw); max-height: 90vh; border: 1px solid var(--line-strong); background: var(--surface); color: inherit; padding: 20px; }
+.overlap-dialog form { margin-left: auto; }
+.overlap-dialog::backdrop { background: rgba(20, 20, 20, .38); }
+.overlap-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 16px 0 10px; }
+.overlap-controls label { display: grid; gap: 4px; }
+.overlap-dialog .table-wrap { max-height: 55vh; }
+.viewer:has(> .overlap-button) { flex-direction: column; gap: 10px; }
 .module-row { cursor: pointer; }
 .module-row:hover { background: var(--hover); }
 body.module-explorer-open { overflow: hidden; }
@@ -715,6 +722,20 @@ body.module-explorer-open { overflow: hidden; }
 <section class="compare run-only" id="comparePanel"><div class="detail-head"><h2>Comparison workspace</h2><div class="actions"><button id="clearCompare">Clear</button></div></div><div class="compare-grid" id="compareGrid"></div></section>
 <main class="layout run-only" id="runInspection"><aside class="list"><div class="list-head" id="listCount"></div><div id="recordList"></div></aside><section class="detail" id="detail"></section></main>
 
+<dialog class="overlap-dialog" id="overlapDialog" aria-labelledby="overlapTitle">
+  <div class="module-explorer-head">
+    <div><h2 id="overlapTitle">Shared RNA–protein genes</h2><div class="sub" id="overlapRecord"></div></div>
+    <form method="dialog"><button>Close</button></form>
+  </div>
+  <div class="overlap-controls">
+    <label>RNA module <select id="overlapRNA"></select></label>
+    <label>Protein module <select id="overlapProtein"></select></label>
+  </div>
+  <p id="overlapStatus" role="status"></p>
+  <div class="table-wrap" id="overlapTable" hidden>
+    <table><thead><tr><th>Gene symbol</th></tr></thead><tbody id="overlapGenes"></tbody></table>
+  </div>
+</dialog>
 <div class="module-explorer-overlay" id="moduleExplorerOverlay" hidden>
   <aside class="module-explorer" role="dialog" aria-modal="true" aria-labelledby="moduleExplorerTitle">
     <div class="module-explorer-head">
@@ -742,6 +763,7 @@ body.module-explorer-open { overflow: hidden; }
 </div>
 
 <script src="module-members/module-member-index.js"></script>
+<script src="module-members/cross-omics-index.js"></script>
 <script src="dashboard-data.js"></script>
 <script>
 const bundle=window.EXPERIMENT_DASHBOARD_DATA;const records=bundle.records;const storageKey=`experiment-review:${bundle.schema_version}:${bundle.run_root}`;let reviews=JSON.parse(localStorage.getItem(storageKey)||'{}');let selectedId=records[0]?.id||null;let artifactChoice={};let comparisonArtifactChoice=null;let compareIds=[];
@@ -858,6 +880,65 @@ function exportModuleMembers(){
 document.getElementById('moduleExplorerClose').onclick=closeModuleExplorer;document.getElementById('moduleExplorerOverlay').onclick=e=>{if(e.target.id==='moduleExplorerOverlay')closeModuleExplorer()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('moduleExplorerOverlay').hidden)closeModuleExplorer()});
 document.getElementById('moduleExplorerModule').onchange=e=>selectModuleMembers(moduleExplorerState.recordId,e.target.value);document.getElementById('moduleExplorerSearch').oninput=e=>{moduleExplorerState.query=e.target.value;moduleExplorerState.page=1;renderModuleExplorer()};document.getElementById('moduleExplorerSort').onchange=e=>{moduleExplorerState.sort=e.target.value;moduleExplorerState.page=1;renderModuleExplorer()};document.getElementById('moduleExplorerPrev').onclick=()=>{moduleExplorerState.page--;renderModuleExplorer()};document.getElementById('moduleExplorerNext').onclick=()=>{moduleExplorerState.page++;renderModuleExplorer()};document.getElementById('moduleExplorerExport').onclick=exportModuleMembers;
 document.addEventListener('click',e=>{const moduleButton=e.target.closest('[data-open-modules]');if(moduleButton){openModuleExplorer(moduleButton.dataset.openModules,moduleButton.dataset.moduleColor||null);return}const row=e.target.closest('[data-module-record][data-module-color]');if(row)openModuleExplorer(row.dataset.moduleRecord,row.dataset.moduleColor)});
+const crossOmicsIndex=window.CROSS_OMICS_INDEX;
+let overlapRecordId=null,overlapProteinModules=null,overlapRequest=0;
+
+function sharedGeneSymbols(rows,proteinGenes){
+  const rnaGenes=new Set(rows.filter(row=>!row[8]).map(row=>String(row[0]??'').trim().toUpperCase()));
+  return proteinGenes.filter(gene=>rnaGenes.has(gene));
+}
+
+async function renderSharedGenes(){
+  const request=++overlapRequest;
+  const rnaColor=$('overlapRNA').value,proteinColor=$('overlapProtein').value;
+  $('overlapTable').hidden=true;
+  $('overlapGenes').replaceChildren();
+  $('overlapStatus').textContent='Loading shared genes…';
+  try{
+    const payload=await loadModuleShard(overlapRecordId,rnaColor);
+    if(request!==overlapRequest||!$('overlapDialog').open)return;
+    const genes=sharedGeneSymbols(payload.rows,overlapProteinModules[proteinColor]);
+    $('overlapStatus').textContent=genes.length?`${genes.length.toLocaleString()} shared genes`:'No shared genes for this module pair.';
+    $('overlapGenes').innerHTML=genes.map(gene=>`<tr><td>${esc(gene)}</td></tr>`).join('');
+    $('overlapTable').hidden=!genes.length;
+  }catch(error){
+    if(request===overlapRequest&&$('overlapDialog').open)$('overlapStatus').textContent=error.message;
+  }
+}
+
+function openSharedGenes(recordId){
+  const record=records.find(r=>r.id===recordId);
+  const [rnaColor,proteinColor]=crossOmicsIndex.defaultPairs[recordId];
+  const {specimen,threshold,strategy,mode}=record.dimensions;
+  const condition=record.provenance.cross_omics_proteomics_condition;
+  overlapRecordId=recordId;
+  overlapProteinModules=crossOmicsIndex.proteinModules[`proteomics::${specimen}::${condition}`];
+  $('overlapRecord').textContent=[record.title,threshold,strategy,mode,`Protein reference ${condition}`].filter(Boolean).map(prettyDimension).join(' · ');
+  const rnaModules=Object.entries(moduleEntry(recordId).modules).filter(([,meta])=>!meta.fully_raw_unassigned).map(([color])=>color);
+  for(const [id,colors,selected] of [
+    ['overlapRNA',rnaModules,rnaColor],
+    ['overlapProtein',Object.keys(overlapProteinModules),proteinColor],
+  ]){
+    $(id).replaceChildren(...colors.sort().map(color=>new Option(color,color)));
+    $(id).value=selected;
+  }
+  $('overlapDialog').showModal();
+  renderSharedGenes();
+}
+
+function addSharedGenesButton(container,recordId){
+  if(!container||!crossOmicsIndex?.defaultPairs[recordId]||container.querySelector('.overlap-button'))return;
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='module-open-button overlap-button';
+  button.textContent='View shared genes';
+  button.onclick=()=>openSharedGenes(recordId);
+  container.prepend(button);
+}
+
+$('overlapRNA').onchange=renderSharedGenes;
+$('overlapProtein').onchange=renderSharedGenes;
+
 const artifactStageDefinitions=[
   {id:'before',label:'Before Preprocess',artifacts:['feature_selection','before_heatmap','before_pca','before_pca_3d']},
   {id:'preprocess',label:'Preprocess',artifacts:['cut_diagnostic','selected_cut']},
@@ -889,6 +970,14 @@ let moduleDecoratePending=false;
 function decorateModuleEntrypoints(){
   moduleDecoratePending=false;
   decorateArtifactStages();
+  if(comparisonArtifactChoice==='cross_omics_similarity'){
+    document.querySelectorAll('#cellComparison .condition-links').forEach(links=>{
+      addSharedGenesButton(links,links.querySelector('[data-open-record]')?.dataset.openRecord);
+    });
+  }
+  if(artifactChoice[selectedId]==='cross_omics_similarity'){
+    addSharedGenesButton(document.querySelector('#detail > .viewer'),selectedId);
+  }
   document.querySelectorAll('.condition-panel').forEach(panel=>{const inspect=panel.querySelector('[data-open-record]'),id=inspect?.dataset.openRecord;if(!id||!moduleEntry(id)||panel.querySelector('[data-open-modules]'))return;const button=document.createElement('button');button.type='button';button.className='module-open-button';button.dataset.openModules=id;button.textContent='Modules & kME';panel.querySelector('.condition-links')?.appendChild(button)});
   const detailActions=document.querySelector('#detail .detail-head .actions');if(detailActions&&moduleEntry(selectedId)&&!detailActions.querySelector('[data-open-modules]')){const button=document.createElement('button');button.type='button';button.dataset.openModules=selectedId;button.textContent='Modules & kME';detailActions.appendChild(button)}
   document.querySelectorAll('#detail .lower > div:first-child tbody tr').forEach(row=>{if(row.dataset.moduleRecord)return;const cell=row.querySelector('td'),color=cell?.textContent.trim();if(!color||!moduleEntry(selectedId)?.modules?.[color])return;row.classList.add('module-row');row.dataset.moduleRecord=selectedId;row.dataset.moduleColor=color;row.title='Open module members and kME ranks';const button=document.createElement('button');button.type='button';button.className='module-open-button';button.dataset.openModules=selectedId;button.dataset.moduleColor=color;button.textContent='View members';cell.appendChild(button)});
