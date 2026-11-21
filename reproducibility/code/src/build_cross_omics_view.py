@@ -1,0 +1,67 @@
+"""Build the offline module-pair viewer data from the shipped CSV files."""
+
+import csv
+import json
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def read_rows(record, file_id):
+    path = next((f["path"] for f in record["files"] if f["id"] == file_id), None)
+    if path:
+        with (ROOT / path).open(encoding="utf-8-sig", newline="") as handle:
+            return list(csv.DictReader(handle))
+    return []
+
+
+def number(value):
+    return float(value) if value else None
+
+
+def build():
+    source = (ROOT / "dashboard-data.js").read_text(encoding="utf-8")
+    records = json.loads(source.split("=", 1)[1].strip().removesuffix(";"))["records"]
+    pairs = {}
+    diagnosis = {}
+    for record in records:
+        record_id = record["id"]
+        rows = read_rows(record, "cross_pair_similarity")
+        if rows:
+            matrix = {}
+            for row in rows:
+                matrix.setdefault(row["transcript_module"], {})[row["proteomics_module"]] = [
+                    float(row["kme_weighted_jaccard"]),
+                    float(row["jaccard"]),
+                    2 if row["reciprocal_best"] == "True" else int(row["transcript_best"] == "True"),
+                ]
+            pairs[record_id] = matrix
+        elif record["dimensions"]["mode"] != "proteomics":
+            continue
+        for row in read_rows(record, "diagnosis_pairwise_statistics"):
+            modules = diagnosis.setdefault(record_id, {})
+            modules.setdefault(row["module_color"], []).append([
+                row["contrast"],
+                number(row["point_biserial_r"]),
+                number(row["p_value_two_sided"]),
+                number(row["bh_fdr_q_within_network"]),
+                int(row["n_reference"]),
+                int(row["n_target"]),
+                int(row["n_pairwise"]),
+                row["inference_ready"].lower() == "true",
+                row["non_estimable_reason"],
+            ])
+    maximum = max(cell[0] for matrix in pairs.values() for row in matrix.values() for cell in row.values())
+    payload = json.dumps(
+        {"pairs": pairs, "diagnosis": diagnosis, "maxWeightedJaccard": maximum},
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    (ROOT / "module-members/cross-omics-view.js").write_bytes(
+        f"window.CROSS_OMICS_VIEW = {payload};\n".encode("utf-8")
+    )
+
+
+if __name__ == "__main__":
+    build()
