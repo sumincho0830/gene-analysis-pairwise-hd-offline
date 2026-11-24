@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_official_kme_module_diagnosis",
+  "generated_at_utc": "2026-11-23T14:17:17.430638+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "trait": "diagnosis",
+    "alternative": "two-sided",
+    "kme_chunk_size": 1000,
+    "threshold": "threshold_10_cells",
+    "strategy": "01_cpm_detection",
+    "mode": "cell_separate",
+    "specimen": "CSF",
+    "cell_type": "Proliferating_T_cell",
+    "condition": "01_default_ds2_mms50_med0p20",
+    "sample_exclusion": "Ng_MOG1;Ng_HD3",
+    "sample_tree_cut": "none_cut_inf"
+  },
+  "generation_rules": {
+    "expression": "audited cut=inf matrix after Ng_MOG1 and Ng_HD3 removal; no additional transform/filter/imputation",
+    "module_assignment": "saved final findModules module_color aligned by feature ID",
+    "module_eigengene": "saved final findModules ME matrix aligned by sample ID; raw-label-0 fully unassigned eigengene excluded like intended MEgrey handling",
+    "kME": "public PyWGCNA.CalculateSignedKME called per independent feature chunk; all feature-to-ME correlations retained",
+    "diagnosis_encoding": "public PyWGCNA.getDatTraits values; object dtype cast to float for pandas 3 / SciPy 1.17 compatibility",
+    "heatmap": "public PyWGCNA.module_trait_relationships_heatmap with diagnosis and two-sided Pearson test",
+    "heatmap_annotation": "official unadjusted Pearson p-value; supplemental BH-FDR is CSV only"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/03_preprocess/01_cut_diagnostic/matrix_before_cut.csv.gz",
+      "size_bytes": 1034664,
+      "sha256": "a80506508efbe693af61210188b112cd89c4a29df759589565fe56b7903744d4"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/sample_info.csv",
+      "size_bytes": 1865,
+      "sha256": "787e7c35a1b12e3f1df3f33d18acdc2ee092afcfb1bcedf772b2e96f29ddd6f3"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/module_assignments.csv.gz",
+      "size_bytes": 146728,
+      "sha256": "f057808fc45f3c9bfcd817c46a4c718acd70c9a469cbb6f4fc1bd6cca17b916a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/module_eigengenes.csv",
+      "size_bytes": 15482,
+      "sha256": "3a9f5d5315be2d73582b586214684e3b273caf1f7c0ca4451ca5311d305d8f3b"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 3055584,
+      "sha256": "7a18eb8721ec6001c647e4c513d5d2baca136629cc08b8c58162d99cf60d2cce"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_kme_summary.csv",
+      "size_bytes": 2508,
+      "sha256": "00dd1787b95910c84966c4cf4d3ec64038e9130238244e30abf28c0114779a41"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_correlations.csv",
+      "size_bytes": 2992,
+      "sha256": "14a34d1560224249667ac61ee61c3246fc954533a7877787eb4815394719217a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pvalues.csv",
+      "size_bytes": 2911,
+      "sha256": "52bb015b0a4f1ac75c7dfa8eb1b591dfdc7ccb4e3692707d64e73b481bd56e91"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_statistics.csv",
+      "size_bytes": 10760,
+      "sha256": "96513bb5529044acd7b9bf72a0612721aa9eab681ba6c4ed91fbde826e977241"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/diagnosis_trait_encoding.csv",
+      "size_bytes": 801,
+      "sha256": "8e72a7108b7bb9f7110455be7607660b191d0cf3d4480a5258b8a38e2fdaa126"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/analysis_summary.json",
+      "size_bytes": 1516,
+      "sha256": "b15b7a204fe48a7bb5630b9bc23674702026860a6ace2a60458d01b95d7a4256"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/figures/module_diagnosis_heatmap.png",
+      "size_bytes": 516676,
+      "sha256": "23a34959209d7da5513a6e6e6c6d23786fb9f5ffa21831a45f178f399aafac76"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_official_kme_module_diagnosis.py",
+      "size_bytes": 28012,
+      "sha256": "c92c388afa136bac8eeb2b4cabed752e65caddefc22df8741bc3aa352623aa0a"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "seaborn": "0.13.2",
+      "PyWGCNA": "2.2.1",
+      "anndata": "0.12.6"
+    }
+  }
+}

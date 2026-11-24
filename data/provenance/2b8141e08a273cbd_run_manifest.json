@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_official_kme_module_diagnosis",
+  "generated_at_utc": "2026-11-23T14:17:14.832923+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "trait": "diagnosis",
+    "alternative": "two-sided",
+    "kme_chunk_size": 1000,
+    "threshold": "threshold_10_cells",
+    "strategy": "01_cpm_detection",
+    "mode": "cell_separate",
+    "specimen": "CSF",
+    "cell_type": "CD8_T_cell",
+    "condition": "01_default_ds2_mms50_med0p20",
+    "sample_exclusion": "Ng_MOG1;Ng_HD3",
+    "sample_tree_cut": "none_cut_inf"
+  },
+  "generation_rules": {
+    "expression": "audited cut=inf matrix after Ng_MOG1 and Ng_HD3 removal; no additional transform/filter/imputation",
+    "module_assignment": "saved final findModules module_color aligned by feature ID",
+    "module_eigengene": "saved final findModules ME matrix aligned by sample ID; raw-label-0 fully unassigned eigengene excluded like intended MEgrey handling",
+    "kME": "public PyWGCNA.CalculateSignedKME called per independent feature chunk; all feature-to-ME correlations retained",
+    "diagnosis_encoding": "public PyWGCNA.getDatTraits values; object dtype cast to float for pandas 3 / SciPy 1.17 compatibility",
+    "heatmap": "public PyWGCNA.module_trait_relationships_heatmap with diagnosis and two-sided Pearson test",
+    "heatmap_annotation": "official unadjusted Pearson p-value; supplemental BH-FDR is CSV only"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/03_preprocess/01_cut_diagnostic/matrix_before_cut.csv.gz",
+      "size_bytes": 5218004,
+      "sha256": "cfc63205d9b6be513b730ef601dcf2cd028f03f9c487d6f3d60b5ac142fe2863"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/sample_info.csv",
+      "size_bytes": 6304,
+      "sha256": "0e26bb327bfaf33988a7f1c1e666445f39379d84031978af9732c6d890312ff1"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/module_assignments.csv.gz",
+      "size_bytes": 97057,
+      "sha256": "c6d8cd4707fbcba63a0a6aacc2c16f01baea324dd5b05afbf10813c666e7b61f"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/module_eigengenes.csv",
+      "size_bytes": 4613,
+      "sha256": "253f0e083f2c42504c8934c8dbf67c859dc454ac14a60cf32b799a33b3341854"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 332344,
+      "sha256": "5d69c3c5869d1794bddfaae00d99aa0a5216fe685edef38fc4a6317b5de353ed"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_kme_summary.csv",
+      "size_bytes": 274,
+      "sha256": "ce3907f50449f0b0d770ab3a07415659bf88c154a98bb009563b359c541d7546"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_correlations.csv",
+      "size_bytes": 215,
+      "sha256": "a706a410bb870e79a8b85cb6e6b180db6fdbd589ba6bba1fc8a85a5936ac0ce7"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_pvalues.csv",
+      "size_bytes": 219,
+      "sha256": "84a746dd8a06e49d1f98fb9e14dc03957a943d9f70841fefce7f2a8edd4f2a70"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/module_diagnosis_statistics.csv",
+      "size_bytes": 784,
+      "sha256": "3a231dad2806eb98a1f70627aef4151b6b7047bfd82c6ce9ea2728ca291347ef"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/diagnosis_trait_encoding.csv",
+      "size_bytes": 3200,
+      "sha256": "5f9b587605ca1b87d428a09e55127a9406e6aca07cb3247d04b492a2d0f379df"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/analysis_summary.json",
+      "size_bytes": 1507,
+      "sha256": "168491ad69eed964158bdd1e9c84e7d60c6f2866ee9741a9ae848eb01ba94782"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/CD8_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/figures/module_diagnosis_heatmap.png",
+      "size_bytes": 76423,
+      "sha256": "d61829ae29383774441da2a6b02a511ab1cf21b068c564bcc9cdd70d34d5fc50"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_official_kme_module_diagnosis.py",
+      "size_bytes": 28012,
+      "sha256": "c92c388afa136bac8eeb2b4cabed752e65caddefc22df8741bc3aa352623aa0a"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "seaborn": "0.13.2",
+      "PyWGCNA": "2.2.1",
+      "anndata": "0.12.6"
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "pipeline": "cross_omics_kme_weighted_jaccard",
+  "generated_at_utc": "2026-11-23T14:18:55.979311+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "proteomics_condition": "04_ds3_mms30_med0p10",
+    "specimen_matching": "CSF",
+    "gene_symbol_normalization": "trim and uppercase",
+    "proteomics_duplicate_probe_collapse": "highest signed kME across all proper modules",
+    "weight": "absolute own-module kME",
+    "global_figure_vmax": 0.3412968820109116
+  },
+  "generation_rules": {
+    "formula": "sum(min(abs own-module kME RNA, abs own-module kME protein)) / sum(max(weights))",
+    "module_outside_weight": 0,
+    "unassigned": "raw-label-0 groups excluded",
+    "universe": "intersection of genes measurable in both assays for this transcript experiment",
+    "interpretation": "descriptive fuzzy-membership overlap; not formal WGCNA module preservation or disease association"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 3055584,
+      "sha256": "7a18eb8721ec6001c647e4c513d5d2baca136629cc08b8c58162d99cf60d2cce"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/feature_module_kme.csv.gz",
+      "size_bytes": 1051243,
+      "sha256": "ef89ba04cd8bac2781ae874e4af88d209f43fdcaf412456adce7b95147345257"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/00_shared/proteomics_gene_collapse/CSF_representative_gene_modules.csv.gz",
+      "size_bytes": 140705,
+      "sha256": "ce463516c7fc934ab4531cccbfaf87588bfc99c4150da2528de1cb3898427411"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/module_pair_similarity.csv",
+      "size_bytes": 86417,
+      "sha256": "1b8771ae7f2da2a0a5d3b97f75d9198baaa500096b8592146345c8776bc86ba7"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/transcript_module_best_matches.csv",
+      "size_bytes": 5751,
+      "sha256": "5a42609c8cce6159084ac25ebd9fc49fd4f247af20586423c108a4ebb2b6a435"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/all_pair_gene_contributions.csv.gz",
+      "size_bytes": 50003,
+      "sha256": "7f91a392d5fd9be9f123b771063b98211322bf4b270f80ad1bb0f9d283276801"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/reciprocal_best_gene_contributions.csv.gz",
+      "size_bytes": 4047,
+      "sha256": "c0b3f77cc99652cbd0dd8a37a0ae9b977113cee37f80e78efbdb9e4676f708ac"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/gene_mapping_audit.json",
+      "size_bytes": 563,
+      "sha256": "3da7f90c06939246245efe39f8bc8a93eb869e6ae92d9addfafd35a799c78ad7"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/kme_weighted_jaccard_heatmap.png",
+      "size_bytes": 393807,
+      "sha256": "f89355640a6c308af4bdc55eab6cf63bd1e4fb75790715fc0788bac589803ae0"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/Proliferating_T_cell/analysis_summary.json",
+      "size_bytes": 1428,
+      "sha256": "b62eff6fe389327f6297e94d117425dd822140e10686cb1233f763486f7654ad"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_cross_omics_kme_weighted_jaccard.py",
+      "size_bytes": 31322,
+      "sha256": "21d36ca8e9c8ad4405c6efc822fe2a62006b15a4d1795ccb446b0d6abc6f8417"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "seaborn": "0.13.2"
+    }
+  }
+}

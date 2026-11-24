@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "pipeline": "transcriptomics_confirmed_outlier_removal_cut_diagnostic",
+  "generated_at_utc": "2026-11-23T10:45:24.987338+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "threshold": "threshold_5_cells",
+    "strategy": "03_hvg_top5000",
+    "mode": "cell_integrated",
+    "specimen": "CSF",
+    "cell_type": "cell_integrated",
+    "excluded_subjects": [
+      "Ng_MOG1",
+      "Ng_HD3"
+    ],
+    "cut": "inf"
+  },
+  "generation_rules": {
+    "input": "existing variance-filtered selected-expression matrix",
+    "sample_change_only": true,
+    "expression_transform": "none",
+    "imputation": "none",
+    "preprocess_input_feature_set": "unchanged from Before Outlier Removal; PyWGCNA preprocess may subsequently remove features through its default goodSamplesGenes checks",
+    "preprocess": "PyWGCNA preprocess with cut=inf only",
+    "cut_suggestion": "midpoint of the global largest difference between consecutive sample-linkage heights; review only",
+    "cut_application": "not applied; pending manual review"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/01_feature_selection/selected_expression_matrix.csv.gz",
+      "size_bytes": 25941130,
+      "sha256": "386c56c62ece40c2f8ef55652fbeb8c7f55dddb2a2c57f469798468b0584fc7f"
+    },
+    {
+      "path": "data/metadata/Transcriptomics_metadata.csv",
+      "size_bytes": 11822,
+      "sha256": "bd218e0d4ba16d0926e2c9c97e27c98635570f26c846c84fbd6585f76e79896a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/01_sample_selection/excluded_samples.csv",
+      "size_bytes": 3940,
+      "sha256": "5e088bb6a5d1479f0e06c9e23dcde1db43e9e563a95b681e3f5c61d617500580"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/01_sample_selection/retained_samples.csv",
+      "size_bytes": 89435,
+      "sha256": "a723d07856283563ad96b034a78298a0db2fa524d18e309613fe324a860f57df"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/01_sample_selection/matrix_after_outlier_removal.csv.gz",
+      "size_bytes": 24945574,
+      "sha256": "99cbc5d3a809123bdb5b3b77322fdb42b7941367d404275011933b2696e0dede"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/01_sample_selection/selection_summary.json",
+      "size_bytes": 318,
+      "sha256": "21b62d5ed39360efba060b1b2953c05190bf52cde4e4feb4a34ac3981c298ff3"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/01_descriptive_statistics/data_summary.csv",
+      "size_bytes": 259,
+      "sha256": "97e337417563efa1bf2159411b4b7c225cfe69ac351bc9f18b581647e5e325d0"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/01_descriptive_statistics/intensity_distribution.png",
+      "size_bytes": 103938,
+      "sha256": "0ecb8471c691bc71a7585137c1b3a260926e92e81888c9139874fd805a7931a7"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/01_descriptive_statistics/sample_statistics.csv",
+      "size_bytes": 208415,
+      "sha256": "1a8bfb46bfba195ce1c4e38da5781b95616e9878061cf44b28859bee621615d6"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/01_descriptive_statistics/gene_statistics.csv",
+      "size_bytes": 664976,
+      "sha256": "13ce9dd8bf70a185b6537e3206b689ce64911a5a6b850e17745a4a7ae769056c"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/01_descriptive_statistics/outlier_candidates.csv",
+      "size_bytes": 14124,
+      "sha256": "2b014820885f9eee820d28c9026cb87feba946786b7e6d8ae4ed51ebc575757a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/02_data_distribution/heatmap.png",
+      "size_bytes": 8333067,
+      "sha256": "9db944e90241ed5c079d03191d74c6276decc8bad37aa63aacc74c9b7f8b9086"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/02_data_distribution/pca_metadata.png",
+      "size_bytes": 1089123,
+      "sha256": "6a006052aa5d462b62614b0a8b767939ab027e3dad9c13e80129397bd0c70c8e"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/02_data_distribution/pca_3d.png",
+      "size_bytes": 740939,
+      "sha256": "4758ebce6032c455c58d136697939d2d67ba006aade7fa77ea15ec2d94c0f058"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/02_data_distribution/pca_3d_interactive.html",
+      "size_bytes": 129401,
+      "sha256": "c06e9b896b7f5f4d3e157a54417c057429e5a6974f3e3e28126fff9d02f40f4f"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/02_before_preprocess/02_data_distribution/pca_scores.csv",
+      "size_bytes": 194618,
+      "sha256": "907cea215d3da133ae15a3b989cf213d244e4545964028b6c9d79d7696608f25"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/matrix_before_cut.csv.gz",
+      "size_bytes": 24945574,
+      "sha256": "99cbc5d3a809123bdb5b3b77322fdb42b7941367d404275011933b2696e0dede"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/removed_features.csv",
+      "size_bytes": 34,
+      "sha256": "9ae249e5b665f9249a74b54904cd9d9db872bc5be4e782a0cc8c285e4b53a8b8"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/removed_samples.csv",
+      "size_bytes": 32,
+      "sha256": "38eee64b5a7c584a741ff8d0e891a16eb4cbe4bb172de908508eb457dce35b0d"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/sample_linkage.csv",
+      "size_bytes": 25206,
+      "sha256": "8ccaf56281d4a834f6ab75d57a2da7edd0fbf7200ae9d30e4013f3c29f20a33a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/sample_distance_metrics.csv",
+      "size_bytes": 157598,
+      "sha256": "5d32dbf4be1ec2b0d3d5e132003b001af29832c98fceb97a11da075655896a8d"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/outlier_candidates_before_cut.csv",
+      "size_bytes": 2854,
+      "sha256": "780e68fc93033808c63f69253d2ad61d2bfc68984834f19472eb7b62963de78d"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/cut_candidates.csv",
+      "size_bytes": 13074862,
+      "sha256": "3e5d831a6d516da916cb6bad787c45d88102382bcb3d32079d228a0c43e7b3b5"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/cut_recommendation.json",
+      "size_bytes": 625,
+      "sha256": "e059cb43c056cb6b9ae93c4406a8ac5af381e32333a1fb2914353da3449e3e80"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/dendrogram_cut_diagnostic.png",
+      "size_bytes": 2370352,
+      "sha256": "a49c490cc17da035f0e422696d519f38ee32b20c3d1cf18e48921fa11cc91d7a"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/dendrogram_leaf_order.csv",
+      "size_bytes": 32090,
+      "sha256": "f3be5a930937fedf0784b875b2d90644958eb27c770f88010a148cf7c8dbe750"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/01_cut_diagnostic/preprocess_summary.json",
+      "size_bytes": 771,
+      "sha256": "272b39640bd477ab95a7673f21f90e1807ba077039c92740bfffac8abdbf980d"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/02_selected_cut/review_status.json",
+      "size_bytes": 858,
+      "sha256": "20118be4c9848cca9a21e7056df1421ca2813d265931f4daff08fcae6e895ef1"
+    },
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/03_hvg_top5000/cell_integrated/CSF/outlier_removal/03_preprocess/02_selected_cut/selected_cut_pending.html",
+      "size_bytes": 568,
+      "sha256": "393990bb4f64000ca16680e6aa6222c8352c5343cd06c10ddc8a3d618db353f1"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_transcriptomics_outlier_removed_diagnostic.py",
+      "size_bytes": 27815,
+      "sha256": "a3311967b9e84ce07fb2820381e6018bcbfea58d086d033572730a9290b550f8"
+    },
+    {
+      "path": "code/src/transcriptomics_qc.py",
+      "size_bytes": 30680,
+      "sha256": "c3d98995de6a212c5d3c9e6bfd73ace6c14f130073f96b9693eca2c318a28195"
+    },
+    {
+      "path": "code/src/run_transcriptomics_variance_filtered.py",
+      "size_bytes": 64654,
+      "sha256": "822218e4329fd4c5059e83df900572384961089d71cb6a3cd50bc37f97a6222f"
+    },
+    {
+      "path": "code/src/refresh_outlier_removed_cut_recommendations.py",
+      "size_bytes": 7538,
+      "sha256": "9d1bd730ce83dbdb68cf9af3155c4ed0a16629ec0c7cecba17402c5d6f9c2a04"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "scipy": "1.17.1",
+      "scikit-learn": "1.9.1",
+      "plotly": "7.1.0",
+      "PyWGCNA": "2.2.1"
+    }
+  }
+}

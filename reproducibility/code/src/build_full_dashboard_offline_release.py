@@ -32,9 +32,22 @@ CODE_FILES = (
     "code/src/analyze_me_merge_candidates.py",
     "code/src/run_official_kme_module_diagnosis.py",
     "code/src/run_pairwise_hd_module_diagnosis.py",
-    "code/src/run_cross_omics_module_similarity.py",
+    "code/src/run_cross_omics_kme_weighted_jaccard.py",
+    "code/src/build_final_jaccard_figure.py",
+    "code/src/build_final_jaccard_bubble_figure.py",
+    "code/src/final_jaccard_dashboard.html",
+    "code/src/run_transcriptomics_outlier_removed_diagnostic.py",
+    "code/src/run_transcriptomics_outlier_removed_find_modules.py",
+    "code/src/run_transcriptomics_outlier_removed_module_diagnosis.py",
+    "code/src/finalize_outlier_removal_no_cut.py",
+    "code/src/validate_transcriptomics_outlier_removed_diagnostic.py",
+    "code/src/validate_transcriptomics_outlier_removed_downstream.py",
+    "code/src/validate_cross_omics_kme_weighted_jaccard.py",
     "code/src/pipeline_provenance.py",
     "code/tests/test_pairwise_hd_module_diagnosis.py",
+    "code/tests/test_cross_omics_kme_weighted_jaccard.py",
+    "code/tests/test_final_jaccard_bubble_figure.py",
+    "code/tests/test_final_jaccard_navigation.py",
     "PIPELINE_SPEC.md",
     "CHANGELOG.md",
 )
@@ -161,7 +174,8 @@ start index.html
 - visual/interactive artifacts: {artifacts}
 - downloadable CSV/JSON/provenance files: {files}
 - feature selection, before/after heatmap·PCA, interactive PCA 3D
-- sample-cut, soft threshold, gene/ME dendrogram, module sizes
+- sample-cut diagnostic, soft threshold, gene/ME dendrogram, module sizes
+- `Ng_MOG1`·`Ng_HD3` 제거 전/후 결과 비교; 제거 후 branch에는 finite sample cut 없음
 - module–diagnosis 및 RNA–protein module similarity
 - dashboard와 결과를 재생성하는 핵심 Python 코드와 pipeline 기록
 
@@ -239,8 +253,38 @@ def build(
         raise FileExistsError(f"Output directory must be empty: {output_root}")
     output_root.mkdir(parents=True, exist_ok=True)
 
+    # This branch was intentionally retired: after removing Ng_MOG1 and Ng_HD3,
+    # preprocessing stays at cut=inf.  A resumed release may still contain HTML
+    # assets created by the earlier selected-cut prototype, so remove that exact
+    # generated directory before computing the release manifest/checksums.
+    obsolete_selected_cut = (
+        output_root / "assets" / "after_outlier_selected_cut"
+    ).resolve()
+    if output_root.resolve() not in obsolete_selected_cut.parents:
+        raise ValueError(f"Obsolete-asset path escaped release root: {obsolete_selected_cut}")
+    if obsolete_selected_cut.is_dir():
+        shutil.rmtree(obsolete_selected_cut)
+
     copy_verified(dashboard_root / "index.html", output_root / "index.html")
     copy_verified(plotly_js, output_root / "assets" / "vendor" / "plotly.min.js")
+    publication_files: list[Path] = []
+    final_jaccard_page = dashboard_root / "final-jaccard.html"
+    if final_jaccard_page.is_file():
+        target = output_root / "final-jaccard.html"
+        copy_verified(final_jaccard_page, target)
+        publication_files.append(target)
+    for relative_root in (
+        Path("figures/final_jaccard"),
+        Path("figures/final_jaccard_bubble"),
+    ):
+        source_root = dashboard_root / relative_root
+        if not source_root.is_dir():
+            continue
+        for source in source_root.rglob("*"):
+            if source.is_file():
+                target = output_root / source.relative_to(dashboard_root)
+                copy_verified(source, target)
+                publication_files.append(target)
     module_member_root = dashboard_root / "module-members"
     module_member_files: list[Path] = []
     if module_member_root.is_dir():
@@ -249,6 +293,14 @@ def build(
                 target = output_root / source.relative_to(dashboard_root)
                 copy_verified(source, target)
                 module_member_files.append(target)
+    cross_overlap_root = dashboard_root / "cross-omics-overlap"
+    cross_overlap_files: list[Path] = []
+    if cross_overlap_root.is_dir():
+        for source in cross_overlap_root.rglob("*"):
+            if source.is_file():
+                target = output_root / source.relative_to(dashboard_root)
+                copy_verified(source, target)
+                cross_overlap_files.append(target)
 
     artifact_sources: dict[str, tuple[Path, Path, str]] = {}
     file_sources: dict[str, tuple[Path, Path]] = {}
@@ -375,6 +427,8 @@ def build(
         "file_references": sum(len(record.get("files", [])) for record in release_records),
         "unique_files": len(file_sources),
         "module_member_files": len(module_member_files),
+        "cross_omics_overlap_files": len(cross_overlap_files),
+        "publication_files": len(publication_files),
         "lossless_webp_sources": len(image_pairs),
         "lossless_webp_files": len(unique_image_targets),
         "lossless_webp_converted_this_run": len(image_results),

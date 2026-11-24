@@ -1,5 +1,57 @@
 # QC pipeline reproducibility contract
 
+## Confirmed transcriptomics outlier-removal branch (2026-11-23)
+
+Two biological subjects are confirmed manual exclusions: `Ng_MOG1` and
+`Ng_HD3`. Every CSF/PB row and every `__CELL__...` row derived from those
+subjects is excluded. The matrix entering the rerun keeps the selected feature
+set and stored expression values unchanged. PyWGCNA may then remove features
+through its default `goodSamplesGenes` checks because the retained sample set
+has changed; those removals belong to preprocess, not outlier removal.
+
+The pre-removal variance-filtered results remain immutable. Each network gains
+an additive `outlier_removal/` branch containing sample-selection records, the
+ten before-preprocess QC outputs, `preprocess(cut=inf)` diagnostics, and an
+explicitly pending selected-cut gate.
+
+The dendrogram line is the exact midpoint of the global largest difference
+between consecutive sample-linkage heights. This intentionally simple rule does
+not auto-apply the cut. A warning is attached when retaining a unique largest
+cluster is ambiguous or when that interpretation would remove more than 5% of
+rows. The suggestion is review evidence only: no finite cut or downstream
+analysis is run before approval.
+
+Review decisions are recorded separately as `Use selected cut`, `Hold`, or
+`Do not use`. The proposed value can be edited before confirmation and exported
+to CSV; browser-local decisions do not alter expression matrices.
+
+```powershell
+.\.venv\Scripts\python.exe results_20261119\code\src\run_transcriptomics_outlier_removed_diagnostic.py --run-root results_20261119
+```
+
+## Cross-omics module-pair overlapping genes (2026-11-21)
+
+모든 transcriptomics–proteomics module pair에 대해 weighted Jaccard 값뿐 아니라 실제
+공통 유전자와 gene별 기여값을 저장한다.
+
+- 결과 파일: `all_pair_gene_contributions.csv.gz`
+- 식별 열: `transcript_module`, `proteomics_module`, `gene`
+- membership 열: `transcript_abs_kME`, `proteomics_abs_kME`
+- gene별 numerator 기여: `weighted_intersection = min(RNA |kME|, protein |kME|)`
+- gene별 shared-union 값: `weighted_union = max(RNA |kME|, protein |kME|)`
+- proteomics gene mapping: ambiguous multi-symbol probe 제외 후, proper module 전체에서
+  signed kME가 가장 큰 representative probe 하나를 선택
+- unassigned feature: 양쪽 모두 제외
+
+각 pair의 저장된 gene 행 수는 `module_pair_similarity.csv`의 `shared_genes`와 같아야
+하며, `weighted_intersection` 합은 pair의 전체 weighted intersection과 같아야 한다.
+단, weighted Jaccard denominator에는 한쪽 module에만 존재하는 gene도 포함되므로
+공통 gene table의 `weighted_union` 합은 전체 pair union과 일반적으로 같지 않다.
+
+Dashboard의 `Cross-omics Gene Overlap`은 network, RNA module, protein module을 선택해
+공통 gene과 양쪽 |kME|를 확인하고 검색·정렬·CSV export할 수 있다. 이는 descriptive
+module membership overlap이며 통계적 유의성 또는 질병 연관성 검정이 아니다.
+
 ## Dashboard artifact stage navigation (2026-11-19)
 
 Cell type comparison과 Individual run의 산출물 선택은 두 단계로 구성한다. 첫 번째
@@ -743,6 +795,21 @@ Inspection dashboard에는 proteomics 8개 condition을 새 source로 추가하�
 
 ## 16. Transcriptomics-proteomics kME-weighted Jaccard
 
+Jaccard 결과의 분석 대상 cell type에서는 `other`를 제외한다. 이 제외는
+`cross_omics_similarity`, `after_outlier_cross_omics_similarity`와 interactive
+RNA-protein module comparison index에만 적용한다. `other`의 upstream QC record와
+비-Jaccard 산출물은 provenance 보존을 위해 삭제하지 않는다.
+
+최종 비교 화면은 CSF의 `cell_separate` network만 대상으로 한다. 조건 축은
+`threshold_5_cells`/`threshold_10_cells`, `01_cpm_detection`/
+`02_hvg_top9000`/`03_hvg_top5000`, before/after outlier removal의 2×3×2
+조합이다. 각 화면에서 행은 `cell type · transcriptomics module`, 열은 CSF
+proteomics module이며, cell 값은 각 원본 실험에 저장된 kME-weighted Jaccard를
+변경 없이 사용한다. 기본 화면은 threshold 5, HVG top 9,000, after outlier
+removal이다. `other`는 제외하며, cell을 선택하면 원래 network/module pair의
+유전자 세부 목록으로 이동한다. permutation p와 다중검정 q는 아직 산출하지
+않았으므로 이 화면의 순위는 descriptive evidence로만 해석한다.
+
 `experiments/05_cross_omics_module_similarity/`에서는 완료된 transcriptomics network마다 같은 specimen의 proteomics module 전체를 비교한다. CSF transcriptomics는 CSF proteomics와, PB transcriptomics는 PB proteomics와만 비교한다. 실험 간 기준이 달라지는 것을 막기 위해 proteomics reference는 동료 결과 재현 조건인 `04_ds3_mms30_med0p10`으로 고정한다.
 
 비교 가중치는 proper final module에 배정된 feature의 `absolute official assigned own-module kME`이다. raw dynamic label 0에서 유래한 fully-unassigned group은 양쪽 모두 제외한다. transcript module A와 proteomics module B의 similarity는 다음 fuzzy weighted Jaccard로 계산한다.
@@ -826,3 +893,32 @@ private 저장소는 `https://github.com/sumincho0830/gene-analysis-pairwise-hd-
 - 인쇄 시 filter, record list, review control과 comparison workspace를 숨기고 선택한 결과 본문만 남긴다.
 
 이 visual layer는 `code/src/build_experiment_inspection_dashboard.py`의 `DESIGN_SYSTEM_CSS`에 보관하고 builder가 생성 HTML의 기존 stylesheet 뒤에 한 번만 주입한다. 따라서 dashboard를 재생성해도 디자인과 사용자 기능이 함께 유지된다. 브라우저 100%와 200% 배율에서 2열/단일열 전환, cross-omics 기본 figure, module table과 provenance 목록을 확인했다.
+
+## 20. 기존 PCA outlier candidate 표시와 전역 집계
+
+PCA outlier 규칙과 저장된 `pca_outlier` 또는 `pca_outlier_candidate` 값은 변경하지 않는다. PCA figure는 이 PCA 전용 후보만 빨간색 빈 원으로 덧그리며 metadata color와 marker를 그대로 보존한다. descriptive-only 후보는 PCA figure에 추가하지 않는다. 저장된 PCA 후보의 source sample ID를 표시하고 각 metadata panel과 3D figure에는 `PCA outlier candidate` legend를 추가한다. Interactive PCA 재생성 시에도 동일 후보를 별도 trace로 표시한다. 별도의 top-N 라벨 선택은 적용하지 않는다.
+
+`code/src/refresh_pca_outlier_annotations.py`는 기존 `pca_scores.csv`만 읽으며 PCA 좌표나 candidate flag를 다시 계산하지 않는다. Proteomics와 transcriptomics의 `pca_metadata.png`, `pca_3d.png`를 모두 갱신하고, `--interactive`를 지정한 경우에만 `pca_3d_interactive.html`도 갱신한다. PCA가 실행되지 않아 좌표가 non-finite인 scope는 기존 not-run 산출물을 보존하고 skip한다.
+
+전역 audit 결과는 `experiments/outlier_candidate_summary/`에 저장한다.
+
+- `outlier_candidate_occurrences.csv`: experiment 경로, PCA candidate sample ID, metadata, 실제 PCA distance·threshold와 실험 내 distance rank
+- `outlier_candidate_experiment_counts.csv`: 실험별 후보 수와 최대 distance
+- `outlier_candidate_sample_counts.csv`: source sample별 총 등장 횟수, 서로 다른 실험 수와 analysis-row 수
+- `summary.json`: 후보 규칙과 전체 집계
+
+동일 source sample이 threshold, cell type, feature-selection strategy, before/after-preprocess에서 반복 검출되면 각각 별도 occurrence로 센다. `distinct_experiment_count`는 서로 다른 `pca_scores.csv`에서 검출된 횟수이고, `distinct_analysis_row_count`는 cell-integrated ID를 포함한 서로 다른 분석 row 수다.
+
+## 21. Transcriptomics 확정 outlier 제거 후 no-cut downstream
+
+Variance-filtered transcriptomics의 민감도 분석에서는 공통적으로 심각한 outlier로 확인된 subject `Ng_MOG1`, `Ng_HD3`만 명시적으로 제거한다. 다른 sample은 자동 제거하지 않는다. 각 network에서 두 subject 제거 후 PyWGCNA `preprocess()`를 `cut=inf`로 실행하며, 생성된 `outlier_removal/03_preprocess/01_cut_diagnostic/matrix_before_cut.csv.gz`가 downstream의 유일한 expression 입력이다.
+
+이 branch에는 `03_preprocess/02_selected_cut`을 만들지 않는다. dendrogram과 largest-gap 후보는 진단 근거로만 보존하며 finite sample-tree cut을 적용하지 않는다. 따라서 `findModules` 직전에도 추가 feature filtering, log 변환, normalization, scaling 또는 결측 대체를 하지 않는다.
+
+실행 순서는 다음과 같다.
+
+1. `run_transcriptomics_outlier_removed_find_modules.py`: 자동 soft-threshold와 기본 module 조건 `deepSplit=2`, `minModuleSize=50`, `MEDissThres=0.20`, `pamRespectsDendro=False`
+2. `run_transcriptomics_outlier_removed_module_diagnosis.py`: 공식 `CalculateSignedKME()`, 공식 one-hot module-trait heatmap, disease-vs-HD pairwise heatmap
+3. `run_cross_omics_kme_weighted_jaccard.py --branch after_outlier_removal`: 동일 specimen의 proteomics module과 kME-weighted Jaccard 비교
+
+각 network의 결과는 각각 `outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/`와 `outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/`에 저장한다. cross-omics 결과는 `experiments/05_cross_omics_module_similarity/after_outlier_removal/`에 저장해 기존 결과를 덮어쓰지 않는다. Dashboard에서는 Before/After Outlier Removal을 같은 stage 안에서 전환하되, After Outlier Removal의 Preprocess에는 `Cut diagnostic`만 표시하고 `Selected cut`은 표시하지 않는다.

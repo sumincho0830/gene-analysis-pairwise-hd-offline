@@ -39,19 +39,25 @@ def build():
             pairs[record_id] = matrix
         elif record["dimensions"]["mode"] != "proteomics":
             continue
-        for row in read_rows(record, "diagnosis_pairwise_statistics"):
-            modules = diagnosis.setdefault(record_id, {})
-            modules.setdefault(row["module_color"], []).append([
-                row["contrast"],
-                number(row["point_biserial_r"]),
-                number(row["p_value_two_sided"]),
-                number(row["bh_fdr_q_within_network"]),
-                int(row["n_reference"]),
-                int(row["n_target"]),
-                int(row["n_pairwise"]),
-                row["inference_ready"].lower() == "true",
-                row["non_estimable_reason"],
-            ])
+        diagnosis_sources = [(record_id, "diagnosis_pairwise_statistics")]
+        if record["dimensions"]["mode"] != "proteomics":
+            diagnosis_sources.append(
+                (f"{record_id}::after_outlier", "after_outlier_diagnosis_pairwise_statistics")
+            )
+        for diagnosis_id, file_id in diagnosis_sources:
+            for row in read_rows(record, file_id):
+                modules = diagnosis.setdefault(diagnosis_id, {})
+                modules.setdefault(row["module_color"], []).append([
+                    row["contrast"],
+                    number(row["point_biserial_r"]),
+                    number(row["p_value_two_sided"]),
+                    number(row["bh_fdr_q_within_network"]),
+                    int(row["n_reference"]),
+                    int(row["n_target"]),
+                    int(row["n_pairwise"]),
+                    row["inference_ready"].lower() == "true",
+                    row["non_estimable_reason"],
+                ])
     maximum = max(cell[0] for matrix in pairs.values() for row in matrix.values() for cell in row.values())
     payload = json.dumps(
         {"pairs": pairs, "diagnosis": diagnosis, "maxWeightedJaccard": maximum},

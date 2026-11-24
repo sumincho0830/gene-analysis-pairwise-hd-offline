@@ -88,6 +88,37 @@ def load_model(path: Path) -> Any:
         return pickle.load(stream)
 
 
+def load_analysis_model(
+    *,
+    source_model: Path | None,
+    source_matrix: Path | None = None,
+    sample_info_path: Path | None = None,
+) -> Any:
+    """Load a stored model or reconstruct a light object from audited tables."""
+
+    if source_model is not None:
+        return load_model(source_model)
+    if source_matrix is None or sample_info_path is None:
+        raise ValueError("source_matrix and sample_info_path are required without a model")
+    from PyWGCNA import WGCNA
+
+    expression = pd.read_csv(source_matrix, index_col="sample_id")
+    expression.index = expression.index.astype(str)
+    expression.columns = expression.columns.astype(str)
+    sample_info = pd.read_csv(sample_info_path, index_col="sample_id")
+    sample_info.index = sample_info.index.astype(str)
+    sample_info = sample_info.reindex(expression.index)
+    if sample_info.isna().all(axis=1).any():
+        raise ValueError("Sample metadata does not cover the reconstructed expression matrix")
+    return WGCNA(
+        name="TRANSCRIPTOMICS_AFTER_OUTLIER_REMOVAL_DOWNSTREAM",
+        geneExp=expression,
+        sampleInfo=sample_info,
+        species="Human",
+        save=False,
+    )
+
+
 def find_model(directory: Path) -> Path:
     candidates = sorted(
         path
@@ -389,13 +420,15 @@ def run_network(
     run_root: Path,
     omics: str,
     network_id: str,
-    source_model: Path,
+    source_model: Path | None,
     assignments_path: Path,
     assignment_feature_column: str,
     eigengenes_path: Path,
     output_root: Path,
     dimensions: dict[str, str],
     overwrite: bool,
+    source_matrix: Path | None = None,
+    sample_info_path: Path | None = None,
 ) -> dict[str, Any]:
     if output_complete(output_root) and not overwrite:
         summary = json.loads((output_root / "analysis_summary.json").read_text(encoding="utf-8"))
@@ -403,7 +436,11 @@ def run_network(
         return summary
 
     output_root.mkdir(parents=True, exist_ok=True)
-    model = load_model(source_model)
+    model = load_analysis_model(
+        source_model=source_model,
+        source_matrix=source_matrix,
+        sample_info_path=sample_info_path,
+    )
     assignments = read_assignments(assignments_path, assignment_feature_column)
     eigengenes = read_eigengenes(eigengenes_path)
     assignments, stored_eigengenes, eigengenes, raw_unassigned_colors = prepare_model(
@@ -504,7 +541,11 @@ def run_network(
             **dimensions,
         },
         generation_rules={
-            "expression": "stored selected-cut PyWGCNA datExpr; no additional transform/filter/imputation",
+            "expression": (
+                "stored selected-cut PyWGCNA datExpr"
+                if source_model is not None
+                else "audited cut=inf matrix after Ng_MOG1 and Ng_HD3 removal"
+            ) + "; no additional transform/filter/imputation",
             "module_assignment": "saved final findModules module_color aligned by feature ID",
             "module_eigengene": "saved final findModules ME matrix aligned by sample ID; raw-label-0 fully unassigned eigengene excluded like intended MEgrey handling",
             "kME": "public PyWGCNA.CalculateSignedKME called per independent feature chunk; all feature-to-ME correlations retained",
@@ -512,7 +553,17 @@ def run_network(
             "heatmap": "public PyWGCNA.module_trait_relationships_heatmap with diagnosis and two-sided Pearson test",
             "heatmap_annotation": "official unadjusted Pearson p-value; supplemental BH-FDR is CSV only",
         },
-        input_paths=[source_model, assignments_path, eigengenes_path],
+        input_paths=[
+            path
+            for path in (
+                source_model,
+                source_matrix,
+                sample_info_path,
+                assignments_path,
+                eigengenes_path,
+            )
+            if path is not None
+        ],
         output_paths=output_paths,
         code_paths=[Path(__file__), Path(__file__).parent / "pipeline_provenance.py"],
         packages=("numpy", "pandas", "matplotlib", "scipy", "seaborn", "PyWGCNA", "anndata"),

@@ -1,5 +1,136 @@
 # Pipeline change log
 
+## 2026-11-24 - Preserve Final Jaccard view during pair inspection
+
+- Changed embedded Final Jaccard heatmap cells and ranking links to open the
+  existing RNA-protein module comparison modal in the parent dashboard.
+- The Final Jaccard page, selected condition, and iframe scroll position now
+  remain unchanged while inspecting or closing a module pair.
+- Kept the original deep-link navigation as the fallback when
+  `final-jaccard.html` is opened as a standalone page.
+- Restricted parent-window messages to the embedded Final Jaccard iframe and
+  known cross-omics records.
+
+## 2026-11-24 - Permutation-tested final CSF Jaccard bubble figures
+
+- Fixed the comparison to CSF, cell-separated transcriptomics, HVG top 9,000,
+  removal of `Ng_MOG1` and `Ng_HD3`, and exclusion of `cell_type=other`.
+- Generated separate threshold-5 and threshold-10 bubble figures in PNG, PDF,
+  and SVG. Dot area encodes the absolute-own-kME-weighted Jaccard similarity;
+  fill color encodes permutation BH-FDR q.
+- Used 10,000 deterministic gene-label permutations per cell network. The null
+  preserves both module sizes and both omics' absolute own-module kME weights,
+  while breaking RNA-protein gene identity correspondence.
+- Computed one-sided empirical p-values as `(b+1)/(B+1)` and applied
+  Benjamini-Hochberg correction across every module pair within each threshold
+  figure.
+- Threshold 5 had no pair at q<=0.25. Threshold 10 had five exploratory pairs
+  at q<=0.25, but neither threshold had a pair at q<=0.10.
+- Exported all pair statistics, q<=0.25 candidate rows, ranked shared genes, and
+  RNA/protein module diagnosis evidence for MS, MOGAD, and NMOSD versus HD.
+
+## 2026-11-24 - Publication-style final CSF Jaccard heatmap
+
+- Added a static publication figure for the dashboard's default final condition:
+  CSF, threshold 5 cells, HVG top 9,000, after removal of `Ng_MOG1` and `Ng_HD3`.
+- Preserved all 12 non-`other` cell types, 250 RNA modules, 18 protein modules,
+  and all 4,500 saved kME-weighted Jaccard values without aggregation or
+  recalculation.
+- Added cell-type boundaries, RNA-best markers, reciprocal-best outlines, a
+  shared similarity scale, and downloadable PNG, PDF, and SVG outputs.
+
+## 2026-11-24 - Restore module-diagnosis forest plot in gene-overlap explorer
+
+- Restored the diagnosis forest plot below the shared, RNA-only, and
+  protein-only gene lists in the RNA-protein module comparison panel.
+- The selected RNA and protein modules are now shown side by side for MS,
+  MOGAD, and NMOSD versus HD with point-biserial `r`, approximate Fisher-z
+  95% confidence intervals, `p`, BH-FDR `q`, and group sample counts.
+- Added the saved after-outlier-removal transcriptomics diagnosis statistics to
+  the offline payload, so before/after views use the diagnosis results from the
+  matching analysis branch rather than reusing one branch.
+- Browser-validated the CSF cDC `darkgrey` RNA module against the CSF `red`
+  protein module under threshold 10 cells and HVG top 9,000.
+
+## 2026-11-24 - Final CSF cross-omics Jaccard comparison page
+
+- Added a top-level `Final CSF Jaccard` dashboard view.
+- Fixed the comparison scope to CSF, `cell_separate`, and all cell types except
+  `other`.
+- Added the full 12-condition hierarchy: threshold 5/10 cells, CPM-only/HVG
+  top 9,000/HVG top 5,000, and before/after outlier removal.
+- Combined every selected cell type-RNA module as heatmap rows and every CSF
+  protein module as columns while preserving the saved kME-weighted Jaccard
+  values.
+- Heatmap cells deep-link to the existing RNA-protein module comparison so the
+  shared, RNA-only, protein-only, and shared-gene kME evidence remains directly
+  inspectable.
+- Added a top-100 descriptive ranking and current-condition CSV export. The
+  page explicitly marks permutation p-values as not yet calculated.
+
+## 2026-11-24 - Exclude `cell_type=other` from cross-omics Jaccard views
+
+- Kept the 12 `other` experiment records and their non-cross-omics QC artifacts.
+- Removed `cross_omics_similarity` and `after_outlier_cross_omics_similarity`
+  from the visible artifacts of `cell_type=other` records.
+- Excluded the corresponding 24 before/after records from the interactive
+  RNA-protein module comparison index. Other cell types are unchanged.
+- Preserved the saved source artifacts so the decision remains auditable and
+  can be reversed without rerunning the analyses.
+
+## 2026-11-23 - After-outlier-removal cut recommendation review
+
+- Changed the review suggestion to the exact midpoint of the global largest
+  consecutive sample-linkage height gap.
+- Added warnings when the largest-cluster interpretation is ambiguous or would
+  remove more than 5% of rows; warnings do not suppress the recommendation.
+- Added a one-network-at-a-time review page with specimen, threshold, feature
+  strategy, mode, cell type, and decision filters.
+- Added editable cut values, `Use selected cut`, `Hold`, `Do not use`, browser
+  persistence, and CSV export/import.
+- Kept every finite cut unapplied pending manual review.
+
+## 2026-11-23 - Confirmed outlier-removal comparison branch
+
+- Preserved existing variance-filtered results as `Before Outlier Removal`.
+- Excluded `Ng_MOG1` and `Ng_HD3` across CSF/PB and all cell-type rows.
+- Regenerated descriptive/distribution QC with no feature or value transform.
+  The preprocess input feature set is unchanged; default `goodSamplesGenes`
+  removals after the sample change are recorded as preprocess results.
+- Re-ran PyWGCNA `preprocess(cut=inf)` only.
+- Saved a review-only global largest-gap midpoint; a warning marks suggestions
+  whose largest-cluster interpretation would remove more than 5% of rows.
+  No selected cut was applied.
+- Added nested dashboard navigation for before/after outlier removal.
+
+## 2026-11-23 — 기존 PCA outlier candidate 라벨과 전역 집계 추가
+
+- PCA 좌표와 candidate 판정은 다시 계산하지 않고 기존 `pca_scores.csv`의
+  `pca_outlier` 또는 `pca_outlier_candidate`를 그대로 사용했다.
+- 저장된 PCA scope 554개를 순회해 좌표가 유효한 545개의 2D metadata figure와
+  3D 정적 figure를 다시 생성했다. PCA 후보가 있는 373개 scope에는 빨간 빈 원,
+  SampleID와 `PCA outlier candidate` legend를 추가했고, PCA가 실행되지 않은 9개는
+  기존 not-run 산출물을 보존했다.
+- descriptive-only 후보와 임의의 top-N 선택은 PCA figure에 추가하지 않으며,
+  저장된 PCA 후보만 표시한다.
+- experiment별 후보와 실제 distance를 저장한 occurrence table, experiment별
+  후보 수, source sample별 반복 검출 횟수 표를
+  `experiments/outlier_candidate_summary/`에 추가했다.
+- PCA 후보는 총 1,638회, source sample 131개, experiment 373개에서 기록됐다.
+- 재현용 `code/src/refresh_pca_outlier_annotations.py`를 추가했다.
+
+## 2026-11-21 — 모든 cross-omics module pair의 공통 유전자 탐색 추가
+
+- reciprocal-best pair에만 저장하던 gene contribution을 모든 30,270개 module pair로
+  확장해 `all_pair_gene_contributions.csv.gz`로 저장했다.
+- 165개 network에서 245,662개 공통 gene 행을 생성했다.
+- pair별 shared-gene 수와 weighted-intersection 합을 원래 similarity table과 직접
+  비교하는 validator와 단위 테스트를 추가했다.
+- Dashboard에 RNA/protein module selector, gene search, kME 정렬, pagination,
+  CSV export를 갖춘 `Cross-omics Gene Overlap` explorer를 추가했다.
+- offline release builder가 overlap index, 165개 lazy-load shard, 계산·검증 코드를
+  함께 포함하도록 변경했다.
+
 ## 2026-11-19 — Dashboard 산출물 탭 단계화
 
 - 한 줄에 혼재하던 산출물 탭을 `Before Preprocess`, `Preprocess`,
@@ -312,3 +443,13 @@
 - 중간 expression matrix 다섯 벌은 중복 저장하지 않고 단계별 gene 목록과 최종 matrix만 저장하도록 했다.
 - 55개 네트워크에서 PCA를 완료했고, 표본이 2개인 1개 네트워크는 명시적 `not_run` placeholder를 유지했다.
 - 이 단계에서는 PyWGCNA preprocess, dendrogram cut, `.p`, `findModules`를 실행하지 않았다.
+
+## 2026-11-23 — Transcriptomics 확정 outlier 제거 후 no-cut downstream
+
+- `Ng_MOG1`, `Ng_HD3`만 제외한 168개 variance-filter network의 branch를 확정했다.
+- 165개 분석 가능 network는 `cut=inf` preprocess matrix를 그대로 downstream 입력으로 사용하고, 표본 부족 3개 network는 명시적으로 skip한다.
+- After Outlier Removal branch의 `02_selected_cut`과 수동 cut-review UI를 제거했다. dendrogram cut 후보는 진단 기록으로만 유지한다.
+- 임시 skip 상태를 캐시하던 `findModules` 재시작 오류를 수정해 upstream preprocess 상태가 확정되면 다시 판정하도록 했다.
+- 기본 `findModules` 조건과 공식 kME/module-diagnosis, pairwise-HD, after-outlier cross-omics 결과를 별도 branch에 저장하도록 실행 코드를 추가했다.
+- Inspection dashboard의 Preprocess/Find Modules/Downstream 각각에서 Before/After Outlier Removal 결과를 전환해 비교하도록 artifact registry를 확장했다.
+- `validate_transcriptomics_outlier_removed_downstream.py`를 추가해 finite cut 부재, 두 subject 부재, 산출물 완결성과 downstream status를 함께 검증하도록 했다.

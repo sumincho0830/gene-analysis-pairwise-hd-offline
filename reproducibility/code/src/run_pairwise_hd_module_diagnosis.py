@@ -34,7 +34,7 @@ from run_official_kme_module_diagnosis import (
     PROTEOMICS_CONDITIONS,
     bh_fdr,
     find_model_used_by_findmodules,
-    load_model,
+    load_analysis_model,
     read_eigengenes,
     write_json,
 )
@@ -323,20 +323,26 @@ def run_network(
     run_root: Path,
     omics: str,
     network_id: str,
-    source_model: Path,
+    source_model: Path | None,
     eigengenes_path: Path,
     output_root: Path,
     dimensions: dict[str, str],
     overwrite: bool,
+    source_matrix: Path | None = None,
+    sample_info_path: Path | None = None,
 ) -> dict[str, Any]:
     if output_complete(output_root) and not overwrite:
         summary = pd.read_json(output_root / "pairwise_hd_analysis_summary.json", typ="series").to_dict()
         summary["resume_action"] = "reused_complete_output"
         return summary
 
-    model = load_model(source_model)
+    model = load_analysis_model(
+        source_model=source_model,
+        source_matrix=source_matrix,
+        sample_info_path=sample_info_path,
+    )
     if "diagnosis" not in model.datExpr.obs.columns:
-        raise ValueError(f"diagnosis is missing from {source_model}")
+        raise ValueError("diagnosis is missing from the downstream expression metadata")
     eigengenes = read_eigengenes(eigengenes_path)
     eigengenes = eigengenes.reindex(model.datExpr.obs_names.astype(str))
     if eigengenes.isna().all(axis=1).any():
@@ -432,7 +438,17 @@ def run_network(
             "missingness": "missing group or zero-variance eigengene is shown as NA, never zero",
             "module_scope": "saved final proper module eigengenes; fully raw-unassigned eigengene excluded",
         },
-        input_paths=[source_model, eigengenes_path, output_root / "module_kme_summary.csv"],
+        input_paths=[
+            path
+            for path in (
+                source_model,
+                source_matrix,
+                sample_info_path,
+                eigengenes_path,
+                output_root / "module_kme_summary.csv",
+            )
+            if path is not None
+        ],
         output_paths=[*paths.values(), summary_path],
         code_paths=[Path(__file__), Path(__file__).parent / "run_official_kme_module_diagnosis.py"],
         packages=("numpy", "pandas", "matplotlib", "scipy", "seaborn", "PyWGCNA", "anndata"),

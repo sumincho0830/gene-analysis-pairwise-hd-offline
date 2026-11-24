@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Final CSF cross-omics Jaccard comparison</title>
+<style>
+:root{--ink:#20272d;--muted:#66717a;--line:#d9dde0;--soft:#f6f7f8;--accent:#1f6485;--selected:#eaf2f6;--warm:#b85017}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,"Malgun Gothic",sans-serif;color:var(--ink);background:#fff;font-size:16px}
+header{padding:28px 34px 18px;border-bottom:1px solid var(--line)}h1{font-size:1.55rem;font-weight:500;margin:0 0 7px}p{margin:0;color:var(--muted);line-height:1.5}
+main{padding:22px 34px 64px;max-width:1900px;margin:auto}.controls{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:18px;padding-bottom:17px;border-bottom:1px solid var(--line)}
+.control-label{display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}.button-row{display:flex;flex-wrap:wrap;gap:6px}
+button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;text-decoration:none}button:hover,.action:hover{background:var(--soft)}button.active{background:var(--selected);border-color:#90aab8;font-weight:700}
+.summary{display:flex;flex-wrap:wrap;gap:8px 22px;margin:16px 0;padding:11px 13px;border:1px solid var(--line);background:var(--soft);font-size:.87rem}.summary b{font-variant-numeric:tabular-nums}
+.note{padding:10px 13px;border-left:3px solid var(--warm);background:#fff8f4;color:#5c4437;font-size:.86rem;line-height:1.5;margin-bottom:18px}
+.publication{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 13px;border:1px solid var(--line);background:#fff;margin-bottom:18px;font-size:.86rem}.publication-links{display:flex;gap:7px;flex-wrap:wrap}.publication b{font-weight:700}
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin:26px 0 9px}.section-head h2{font-size:1.08rem;font-weight:600;margin:0}.section-head p{font-size:.82rem}.actions{display:flex;gap:7px;flex-wrap:wrap}
+.heatmap-wrap{border:1px solid var(--line);max-height:68vh;overflow:auto;background:#fff}.heatmap{border-collapse:separate;border-spacing:0;font-size:.73rem}.heatmap th,.heatmap td{padding:0;border-right:1px solid #edf0f2;border-bottom:1px solid #edf0f2;white-space:nowrap;text-align:center}
+.heatmap thead th{position:sticky;top:0;z-index:4;background:#fff;height:115px;vertical-align:bottom;padding:5px}.heatmap thead th.rotate>span{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:105px}.heatmap th.row-label{position:sticky;left:0;z-index:2;background:#fff;text-align:left;padding:4px 8px;min-width:225px;font-weight:400}.heatmap tr.cell-start th.row-label{border-top:2px solid #87949c;font-weight:700}.heatmap td{padding:2px}.heatmap a{display:block;min-width:45px;padding:4px 3px;color:#172027;text-decoration:none;font-variant-numeric:tabular-nums;border:1px solid transparent}.heatmap a.high{color:#fff}.heatmap a.reciprocal{border-color:#101820;font-weight:700}.heatmap a:hover,.heatmap a:focus{outline:2px solid var(--warm);outline-offset:-2px;position:relative;z-index:1}
+.legend{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--muted)}.gradient{width:155px;height:12px;background:linear-gradient(90deg,rgba(31,100,133,.05),rgba(31,100,133,.95));border:1px solid var(--line)}
+.table-wrap{border:1px solid var(--line);max-height:520px;overflow:auto}table.ranking{width:100%;border-collapse:collapse;font-size:.82rem}.ranking th{position:sticky;top:0;background:#fff;z-index:1;text-align:left;border-bottom:1px solid #aeb7bd;padding:8px}.ranking td{border-bottom:1px solid #eceff1;padding:7px 8px}.ranking td.num{text-align:right;font-variant-numeric:tabular-nums}.badge{display:inline-block;padding:2px 5px;border:1px solid #aeb7bd;font-size:.7rem}.empty{padding:70px 20px;text-align:center;color:var(--muted)}
+@media(max-width:900px){main,header{padding-left:16px;padding-right:16px}.controls{grid-template-columns:1fr}.section-head{align-items:flex-start;flex-direction:column}.heatmap th.row-label{min-width:175px}}
+</style>
+</head>
+<body>
+<header><h1>Final CSF RNA–protein module comparison</h1><p>All cell types except <code>other</code> · all CSF protein modules · saved kME-weighted Jaccard values</p></header>
+<main>
+  <section class="controls" aria-label="Analysis condition">
+    <div><span class="control-label">Cell threshold</span><div class="button-row" id="thresholdControls"></div></div>
+    <div><span class="control-label">Feature strategy</span><div class="button-row" id="strategyControls"></div></div>
+    <div><span class="control-label">Outlier removal</span><div class="button-row" id="removalControls"></div></div>
+  </section>
+  <div class="summary" id="summary"></div>
+  <div class="note"><b>Statistical status:</b> the publication bubble figures use 10,000 one-sided gene-label permutations per cell network, p=(b+1)/(B+1), and Benjamini–Hochberg correction across all module pairs within each threshold figure. The interactive matrix below remains a descriptive explorer. The q≤0.25 candidate view is exploratory, not a conventional confirmatory significance threshold.</div>
+  <div class="publication"><span><b>Publication figure</b> · CSF · threshold 5 cells · HVG top 9,000 · after outlier removal</span><span class="publication-links"><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.png">PNG</a><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.pdf">PDF</a><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.svg">SVG</a></span></div>
+  <div class="publication"><span><b>Permutation bubble</b> · threshold 5 cells · 4,500 tests · no q≤0.25 pair</span><span class="publication-links"><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.png">PNG</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.pdf">PDF</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.svg">SVG</a><a class="action" href="figures/final_jaccard_bubble/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_statistics.csv.gz">Statistics</a></span></div>
+  <div class="publication"><span><b>Permutation bubble</b> · threshold 10 cells · 3,060 tests · five exploratory q≤0.25 pairs</span><span class="publication-links"><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.png">Full PNG</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.pdf">Full PDF</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_candidate_rows_q0p25.png">Candidates PNG</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_candidate_rows_q0p25.pdf">Candidates PDF</a><a class="action" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_candidate_shared_genes.csv.gz">Shared genes</a><a class="action" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_candidate_diagnosis_concordance.csv">Disease evidence</a></span></div>
+  <div class="section-head"><div><h2>All cell type–RNA modules × all protein modules</h2><p>Rows are grouped by cell type. Click a value to inspect shared, RNA-only, and protein-only genes in the original module comparison.</p></div><div class="legend"><span>0</span><span class="gradient"></span><span id="legendMax">max</span></div></div>
+  <div class="heatmap-wrap" id="heatmap"></div>
+  <div class="section-head"><div><h2>Highest similarity pairs</h2><p>Descriptive explorer; use the linked permutation figures and statistics files for p and BH-FDR q.</p></div><div class="actions"><button id="downloadCsv">Download current CSV</button></div></div>
+  <div class="table-wrap"><table class="ranking"><thead><tr><th>#</th><th>Cell type</th><th>RNA module</th><th>Protein module</th><th>Weighted Jaccard</th><th>Plain Jaccard</th><th>Shared genes</th><th>Best-match status</th><th>Genes</th></tr></thead><tbody id="ranking"></tbody></table></div>
+</main>
+<script src="cross-omics-overlap/overlap-index.js"></script>
+<script>
+const records=(window.CROSS_OMICS_OVERLAP_INDEX&&window.CROSS_OMICS_OVERLAP_INDEX.records)||{};
+const thresholds=[['threshold_5_cells','5 cells'],['threshold_10_cells','10 cells']];
+const strategies=[['01_cpm_detection','CPM only'],['02_hvg_top9000','HVG top 9,000'],['03_hvg_top5000','HVG top 5,000']];
+const removals=[['before','Before outlier removal'],['after','After outlier removal']];
+const cellOrder=['B_cell','CD4_T_cell','CD8_T_cell','cDCs','Classical_Monocytes','Macrophages','MAIT_gDT_cell','NK_cell','Non_classical_Monocytes','pDCs','Plasmablast','Proliferating_T_cell'];
+const state={threshold:'threshold_5_cells',strategy:'02_hvg_top9000',removal:'after'};
+const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const pretty=value=>String(value??'').replaceAll('_',' ');
+const pairObject=(entry,row)=>Object.fromEntries(entry.pair_columns.map((column,index)=>[column,row[index]]));
+function dimensions(recordId,entry){
+  const parts=String(recordId).split('::'),after=parts[parts.length-1]==='after_outlier',base=after?parts.slice(0,-1):parts;
+  return {threshold:entry.threshold||base[1],strategy:entry.strategy||base[2],mode:entry.mode||base[3],specimen:entry.specimen||base[4],cellType:entry.cell_type||base[5],removal:after?'after':'before'};
+}
+function selectedRecords(){
+  return Object.entries(records).map(([id,entry])=>({id,entry,dimensions:dimensions(id,entry)})).filter(item=>item.dimensions.specimen==='CSF'&&item.dimensions.mode==='cell_separate'&&item.dimensions.cellType.toLowerCase()!=='other'&&item.dimensions.threshold===state.threshold&&item.dimensions.strategy===state.strategy&&item.dimensions.removal===state.removal).sort((a,b)=>(cellOrder.indexOf(a.dimensions.cellType)<0?999:cellOrder.indexOf(a.dimensions.cellType))-(cellOrder.indexOf(b.dimensions.cellType)<0?999:cellOrder.indexOf(b.dimensions.cellType))||a.dimensions.cellType.localeCompare(b.dimensions.cellType));
+}
+function selectedPairs(){
+  const output=[];for(const item of selectedRecords())for(const row of item.entry.pairs){const pair=pairObject(item.entry,row);output.push({...pair,recordId:item.id,cellType:item.dimensions.cellType})}return output;
+}
+function deepLink(pair){const query=new URLSearchParams({cross_record:pair.recordId,transcript_module:pair.transcript_module,proteomics_module:pair.proteomics_module});return `index.html?${query.toString()}`}
+function openPairWithoutLeavingFinalPage(event){
+  const link=event.target.closest('a[href*="cross_record="]');
+  if(!link||window.parent===window)return;
+  const target=new URL(link.getAttribute('href'),window.location.href),recordId=target.searchParams.get('cross_record');
+  if(!recordId)return;
+  event.preventDefault();
+  window.parent.postMessage({type:'open-cross-omics-overlap',recordId,transcriptModule:target.searchParams.get('transcript_module'),proteomicsModule:target.searchParams.get('proteomics_module')},'*');
+}
+document.addEventListener('click',openPairWithoutLeavingFinalPage);
+function renderControls(){
+  const group=(id,values,key)=>document.getElementById(id).innerHTML=values.map(([value,label])=>`<button type="button" data-key="${key}" data-value="${value}" class="${state[key]===value?'active':''}">${label}</button>`).join('');
+  group('thresholdControls',thresholds,'threshold');group('strategyControls',strategies,'strategy');group('removalControls',removals,'removal');
+  document.querySelectorAll('[data-key]').forEach(button=>button.onclick=()=>{state[button.dataset.key]=button.dataset.value;render()});
+}
+function renderHeatmap(pairs){
+  const recordsNow=selectedRecords(),pairMap=new Map(pairs.map(pair=>[`${pair.recordId}\u0000${pair.transcript_module}\u0000${pair.proteomics_module}`,pair]));
+  const proteinModules=[...new Set(pairs.map(pair=>pair.proteomics_module))].sort((a,b)=>a.localeCompare(b));
+  const maxValue=Math.max(0,...pairs.map(pair=>Number(pair.weighted_jaccard)||0));document.getElementById('legendMax').textContent=maxValue.toFixed(3);
+  const rows=[];for(const item of recordsNow){
+    const moduleMax=new Map(item.entry.transcript_modules.map(module=>[module,Math.max(0,...proteinModules.map(protein=>Number(pairMap.get(`${item.id}\u0000${module}\u0000${protein}`)?.weighted_jaccard)||0))]));
+    const modules=[...item.entry.transcript_modules].sort((a,b)=>moduleMax.get(b)-moduleMax.get(a)||a.localeCompare(b));
+    modules.forEach((module,index)=>rows.push({item,module,cellStart:index===0}));
+  }
+  const header=proteinModules.map(module=>`<th class="rotate"><span>${esc(module)}</span></th>`).join('');
+  const body=rows.map(({item,module,cellStart})=>`<tr class="${cellStart?'cell-start':''}"><th class="row-label">${esc(pretty(item.dimensions.cellType))} · ${esc(module)}</th>${proteinModules.map(protein=>{const pair=pairMap.get(`${item.id}\u0000${module}\u0000${protein}`);if(!pair)return '<td>NA</td>';const value=Number(pair.weighted_jaccard)||0,intensity=maxValue?value/maxValue:0,alpha=(.05+.9*intensity).toFixed(3),marker=pair.reciprocal_best?'★':pair.transcript_best?'•':'';return `<td><a target="_top" href="${esc(deepLink(pair))}" class="${intensity>.68?'high':''} ${pair.reciprocal_best?'reciprocal':''}" style="background:rgba(31,100,133,${alpha})" title="${esc(pretty(item.dimensions.cellType))} ${esc(module)} × protein ${esc(protein)}; weighted Jaccard ${value.toFixed(4)}">${value.toFixed(3)}${marker}</a></td>`}).join('')}</tr>`).join('');
+  document.getElementById('heatmap').innerHTML=rows.length?`<table class="heatmap"><thead><tr><th class="row-label">Cell type · RNA module</th>${header}</tr></thead><tbody>${body}</tbody></table>`:'<div class="empty">No saved Jaccard results for this condition.</div>';
+  return {rowCount:rows.length,proteinCount:proteinModules.length,maxValue};
+}
+function renderRanking(pairs){
+  const ranked=[...pairs].sort((a,b)=>(Number(b.weighted_jaccard)||0)-(Number(a.weighted_jaccard)||0)||a.cellType.localeCompare(b.cellType)||a.transcript_module.localeCompare(b.transcript_module)).slice(0,100);
+  document.getElementById('ranking').innerHTML=ranked.map((pair,index)=>{const status=pair.reciprocal_best?'Reciprocal best':pair.transcript_best?'RNA best':pair.proteomics_best?'Protein best':'—';return `<tr><td>${index+1}</td><td>${esc(pretty(pair.cellType))}</td><td>${esc(pair.transcript_module)}</td><td>${esc(pair.proteomics_module)}</td><td class="num">${Number(pair.weighted_jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.shared_genes||0).toLocaleString()}</td><td><span class="badge">${status}</span></td><td><a class="action" target="_top" href="${esc(deepLink(pair))}">Inspect</a></td></tr>`}).join('')||'<tr><td colspan="9" class="empty">No pairs</td></tr>';
+}
+function downloadCsv(pairs){
+  const columns=['cell_type','transcript_module','proteomics_module','weighted_jaccard','plain_jaccard','shared_genes','transcript_module_genes','proteomics_module_genes','transcript_best','proteomics_best','reciprocal_best','record_id'];
+  const quote=value=>{const text=String(value??'');return /[",\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text};
+  const rows=pairs.map(pair=>[pair.cellType,pair.transcript_module,pair.proteomics_module,pair.weighted_jaccard,pair.jaccard,pair.shared_genes,pair.transcript_module_genes,pair.proteomics_module_genes,pair.transcript_best,pair.proteomics_best,pair.reciprocal_best,pair.recordId]);
+  const blob=new Blob(['\ufeff'+[columns,...rows].map(row=>row.map(quote).join(',')).join('\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`CSF_${state.threshold}_${state.strategy}_${state.removal}_kME_weighted_Jaccard.csv`;link.click();URL.revokeObjectURL(link.href);
+}
+function render(){
+  renderControls();const recordsNow=selectedRecords(),pairs=selectedPairs(),heatmap=renderHeatmap(pairs);renderRanking(pairs);
+  const threshold=thresholds.find(([value])=>value===state.threshold)?.[1],strategy=strategies.find(([value])=>value===state.strategy)?.[1],removal=removals.find(([value])=>value===state.removal)?.[1];
+  document.getElementById('summary').innerHTML=`<span>Specimen <b>CSF</b></span><span>Threshold <b>${threshold}</b></span><span>Features <b>${strategy}</b></span><span><b>${removal}</b></span><span>Cell types <b>${recordsNow.length}</b></span><span>RNA modules <b>${heatmap.rowCount}</b></span><span>Protein modules <b>${heatmap.proteinCount}</b></span><span>Module pairs <b>${pairs.length.toLocaleString()}</b></span>`;
+  document.getElementById('downloadCsv').onclick=()=>downloadCsv(pairs);
+}
+render();
+</script>
+</body>
+</html>

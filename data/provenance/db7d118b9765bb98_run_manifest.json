@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "pipeline": "cross_omics_kme_weighted_jaccard",
+  "generated_at_utc": "2026-11-23T14:18:42.789836+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "proteomics_condition": "04_ds3_mms30_med0p10",
+    "specimen_matching": "CSF",
+    "gene_symbol_normalization": "trim and uppercase",
+    "proteomics_duplicate_probe_collapse": "highest signed kME across all proper modules",
+    "weight": "absolute own-module kME",
+    "global_figure_vmax": 0.3412968820109116
+  },
+  "generation_rules": {
+    "formula": "sum(min(abs own-module kME RNA, abs own-module kME protein)) / sum(max(weights))",
+    "module_outside_weight": 0,
+    "unassigned": "raw-label-0 groups excluded",
+    "universe": "intersection of genes measurable in both assays for this transcript experiment",
+    "interpretation": "descriptive fuzzy-membership overlap; not formal WGCNA module preservation or disease association"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/CSF/Non_classical_Monocytes/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 1271477,
+      "sha256": "77898e5d34415c7d8d7f87261790f76eb7c1707253e2b1d7f307275b1da04114"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/feature_module_kme.csv.gz",
+      "size_bytes": 1051243,
+      "sha256": "ef89ba04cd8bac2781ae874e4af88d209f43fdcaf412456adce7b95147345257"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/00_shared/proteomics_gene_collapse/CSF_representative_gene_modules.csv.gz",
+      "size_bytes": 140705,
+      "sha256": "ce463516c7fc934ab4531cccbfaf87588bfc99c4150da2528de1cb3898427411"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/CSF/Non_classical_Monocytes/module_pair_similarity.csv",
+      "size_bytes": 59403,
+      "sha256": "e3940f625a5e013b5bbe7c793bef5beebc5caac0d56e71e2fc4b4160ef9a45aa"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/CSF/Non_classical_Monocytes/transcript_module_best_matches.csv",
+      "size_bytes": 4021,
+      "sha256": "cea79252c59ee3eca24dd6648f4d05e3158f6e2c69af92be501c036721f5760b"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/CSF/Non_classical_Monocytes/all_pair_gene_contributions.csv.gz",
+      "size_bytes": 34889,
+      "sha256": "aee6cea2eb3499d5f66ea68b94274bd6bcba00bbc5d8ebf9e71023358ebb2bcf"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/CSF/Non_classical_Monocytes/reciprocal_best_gene_contributions.csv.gz",
+      "size_bytes": 2713,
+      "sha256": "45fe37f79b34ac8e36d712909fa1b18f396eae653038fc904d2c319f06ba5ce6"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/CSF/Non_classical_Monocytes/gene_mapping_audit.json",
+      "size_bytes": 564,
+      "sha256": "0938514b789080bd6e02071f9d9fc78458e101d97fc520c0fdefb72d6e1b9bb8"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/CSF/Non_classical_Monocytes/kme_weighted_jaccard_heatmap.png",
+      "size_bytes": 317732,
+      "sha256": "e2083c960fe0b1c8dddabafc5f2714294c1464f719c1fedef122249a1f50b2bd"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_5_cells/01_cpm_detection/cell_separate/CSF/Non_classical_Monocytes/analysis_summary.json",
+      "size_bytes": 1442,
+      "sha256": "735534c26fe32434d0ec066e9ecbc4f57381dd399756ad12245ef986abaf5cbc"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_cross_omics_kme_weighted_jaccard.py",
+      "size_bytes": 31322,
+      "sha256": "21d36ca8e9c8ad4405c6efc822fe2a62006b15a4d1795ccb446b0d6abc6f8417"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "seaborn": "0.13.2"
+    }
+  }
+}

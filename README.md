@@ -19,10 +19,11 @@ start index.html
 ## 포함된 범위
 
 - experiment records: 176
-- visual/interactive artifacts: 2741
-- downloadable CSV/JSON/provenance files: 5612
+- visual/interactive artifacts: 4565
+- downloadable CSV/JSON/provenance files: 10253
 - feature selection, before/after heatmap·PCA, interactive PCA 3D
-- sample-cut, soft threshold, gene/ME dendrogram, module sizes
+- sample-cut diagnostic, soft threshold, gene/ME dendrogram, module sizes
+- `Ng_MOG1`·`Ng_HD3` 제거 전/후 결과 비교; 제거 후 branch에는 finite sample cut 없음
 - module–diagnosis 및 RNA–protein module similarity
 - dashboard와 결과를 재생성하는 핵심 Python 코드와 pipeline 기록
 

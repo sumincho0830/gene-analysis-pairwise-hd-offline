@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "pipeline": "cross_omics_kme_weighted_jaccard",
+  "generated_at_utc": "2026-11-23T14:18:53.542038+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "proteomics_condition": "04_ds3_mms30_med0p10",
+    "specimen_matching": "CSF",
+    "gene_symbol_normalization": "trim and uppercase",
+    "proteomics_duplicate_probe_collapse": "highest signed kME across all proper modules",
+    "weight": "absolute own-module kME",
+    "global_figure_vmax": 0.3412968820109116
+  },
+  "generation_rules": {
+    "formula": "sum(min(abs own-module kME RNA, abs own-module kME protein)) / sum(max(weights))",
+    "module_outside_weight": 0,
+    "unassigned": "raw-label-0 groups excluded",
+    "universe": "intersection of genes measurable in both assays for this transcript experiment",
+    "interpretation": "descriptive fuzzy-membership overlap; not formal WGCNA module preservation or disease association"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/NK_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 2350968,
+      "sha256": "b19246656bcab2b929382ef471c7b55a9625e12d9d7f433711afd9e9827a063a"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis/CSF/04_ds3_mms30_med0p10/feature_module_kme.csv.gz",
+      "size_bytes": 1051243,
+      "sha256": "ef89ba04cd8bac2781ae874e4af88d209f43fdcaf412456adce7b95147345257"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/00_shared/proteomics_gene_collapse/CSF_representative_gene_modules.csv.gz",
+      "size_bytes": 140705,
+      "sha256": "ce463516c7fc934ab4531cccbfaf87588bfc99c4150da2528de1cb3898427411"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/NK_cell/module_pair_similarity.csv",
+      "size_bytes": 54449,
+      "sha256": "cb22822f083f138f0a90152ff0bf83ee50fef872f4e04bd7518ae7c9744f4d75"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/NK_cell/transcript_module_best_matches.csv",
+      "size_bytes": 3609,
+      "sha256": "15947fd96a81407474298dda090bb4dd7eca712cc020dbe28f8e9c3aef59e09c"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/NK_cell/all_pair_gene_contributions.csv.gz",
+      "size_bytes": 43242,
+      "sha256": "d6ddb4e113bddab91957df2c831f54c3774d3a50f266ee0c9cbc0c9d065d4e6b"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/NK_cell/reciprocal_best_gene_contributions.csv.gz",
+      "size_bytes": 2767,
+      "sha256": "5ed8368f2660f6bbfff90619897386f1a4a90492d8f63b3fc37d048d1591c7aa"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/NK_cell/gene_mapping_audit.json",
+      "size_bytes": 566,
+      "sha256": "4f5abb1107276b7bce1ed44568012884f0c57b9812d106c780ca4f603011f827"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/NK_cell/kme_weighted_jaccard_heatmap.png",
+      "size_bytes": 308562,
+      "sha256": "38b4efc8862e3e106e24fd28e1e2fc0b448c84cf107ffb2e4bc1dc2fb8b22bc3"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/NK_cell/analysis_summary.json",
+      "size_bytes": 1337,
+      "sha256": "ad5331d543ac385792cb979cee6fda62632208add60438152d8f8d28297118f9"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_cross_omics_kme_weighted_jaccard.py",
+      "size_bytes": 31322,
+      "sha256": "21d36ca8e9c8ad4405c6efc822fe2a62006b15a4d1795ccb446b0d6abc6f8417"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "seaborn": "0.13.2"
+    }
+  }
+}
