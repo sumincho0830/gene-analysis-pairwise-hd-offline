@@ -47,9 +47,9 @@ const records=(window.CROSS_OMICS_OVERLAP_INDEX&&window.CROSS_OMICS_OVERLAP_INDE
 const thresholds=[['threshold_5_cells','5 cells'],['threshold_10_cells','10 cells']];
 const strategies=[['01_cpm_detection','CPM only'],['02_hvg_top9000','HVG top 9,000'],['03_hvg_top5000','HVG top 5,000']];
 const removals=[['before','Before outlier removal'],['after','After outlier removal']];
-const proteinScopes=[['all','All protein networks'],['CSF','CSF protein'],['PB','PB protein']];
+const proteinScopes=[['CSF','CSF protein'],['PB','PB protein'],['all','All protein networks']];
 const cellOrder=['B_cell','CD4_T_cell','CD8_T_cell','cDCs','Classical_Monocytes','Macrophages','MAIT_gDT_cell','NK_cell','Non_classical_Monocytes','pDCs','Plasmablast','Proliferating_T_cell'];
-const state={proteinScope:'all',threshold:'threshold_5_cells',strategy:'02_hvg_top9000',removal:'after'};
+const state={proteinScope:'CSF',threshold:'threshold_5_cells',strategy:'02_hvg_top9000',removal:'after'};
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const pretty=value=>String(value??'').replaceAll('_',' ');
 const pairObject=(entry,row)=>Object.fromEntries(entry.pair_columns.map((column,index)=>[column,row[index]]));
