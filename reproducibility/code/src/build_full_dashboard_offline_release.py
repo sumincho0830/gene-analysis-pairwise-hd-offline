@@ -52,6 +52,7 @@ CODE_FILES = (
     "code/tests/test_final_jaccard_navigation.py",
     "code/tests/test_final_jaccard_protein_scope.py",
     "code/tests/test_after_preprocess_outlier_navigation.py",
+    "code/tests/test_proteomics_qc_comparison.py",
     "PIPELINE_SPEC.md",
     "CHANGELOG.md",
 )

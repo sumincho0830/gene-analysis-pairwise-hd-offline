@@ -1,5 +1,16 @@
 # Pipeline change log
 
+## 2026-11-24 - Add proteomics raw vs batch-corrected QC comparison
+
+- Added six dashboard records covering Raw and Batch corrected proteomics for
+  ALL, CSF, and PB scopes.
+- Exposed the saved heatmap, PCA metadata, static PCA 3D, interactive PCA 3D,
+  intensity distribution, PCA scores, statistics, outlier, and provenance
+  outputs without recalculating expression values or PCA coordinates.
+- Aligned Raw and Batch corrected panels side by side in the existing Cell type
+  comparison view and retained separate sample/feature counts for each run.
+- Added an offline release test that verifies every required QC artifact exists.
+
 ## 2026-11-24 - Restore post-preprocess outlier-removal comparison
 
 - Generated the standard ten descriptive/distribution outputs from each saved

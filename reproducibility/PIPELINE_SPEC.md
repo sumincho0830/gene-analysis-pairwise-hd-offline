@@ -930,3 +930,13 @@ Variance-filtered transcriptomics의 민감도 분석에서는 공통적으로 �
 3. `run_cross_omics_kme_weighted_jaccard.py --branch after_outlier_removal`: 동일 specimen의 proteomics module과 kME-weighted Jaccard 비교
 
 각 network의 결과는 각각 `outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/`와 `outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/`에 저장한다. cross-omics 결과는 `experiments/05_cross_omics_module_similarity/after_outlier_removal/`에 저장해 기존 결과를 덮어쓰지 않는다. Dashboard에서는 Before/After Outlier Removal을 같은 stage 안에서 전환하되, After Outlier Removal의 Preprocess에는 `Cut diagnostic`만 표시하고 `Selected cut`은 표시하지 않는다.
+
+## 22. Proteomics raw–batch-corrected QC comparison
+
+Dashboard의 `Proteomics raw vs batch-corrected QC` source는 새 통계값을 계산하지 않고 기존에 저장된 QC 산출물을 동일 schema로 연결한다. 비교 범위는 `ALL`, `CSF`, `PB`이며 각 범위에서 `Raw`와 `Batch corrected`를 두 condition panel로 나란히 표시한다.
+
+공통 visual tab은 heatmap, PCA metadata, 정적 PCA 3D, interactive PCA 3D다. descriptive intensity distribution은 해당 scope에 저장된 경우에만 표시한다. PCA scores, data summary, sample/protein statistics, outlier candidates와 run manifest도 실제로 존재하는 scope에서 download file로 연결한다.
+
+연결된 PCA는 저장된 분석 규칙을 그대로 유지한다. feature에 하나라도 결측값이 있으면 해당 analysis subset의 PCA에서 feature 전체를 제외하고, nonconstant complete-case feature 전체를 사용하며, imputation이나 top-N feature selection을 하지 않는다. 값 변환은 추가로 적용하지 않고 mean centering만 사용한다. Heatmap 역시 저장된 입력값을 그대로 사용하며 dashboard builder는 figure의 값을 다시 계산하지 않는다.
+
+Raw와 batch-corrected record는 각각의 저장된 sample set과 feature 수를 화면에 따로 표시한다. 두 record의 sample 수가 다를 수 있으므로 이 화면은 동일 sample의 paired 변화량 계산이 아니라 각 저장 run의 분포·구조를 병렬로 inspection하는 용도다.

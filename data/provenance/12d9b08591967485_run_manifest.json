@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "pipeline": "00_raw_proteomics_qc",
+  "generated_at_utc": "2026-11-18T05:52:21.985990+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "variant": "raw",
+    "robust_z_threshold": 5.0,
+    "pca_distance_quantile": 0.999,
+    "pca_components_saved": 10,
+    "pca_components_for_outlier": 5
+  },
+  "generation_rules": {
+    "heatmap": {
+      "matrix": "union of all cohort PROBEIDs in stored first-occurrence order",
+      "intensity_values": "stored input values; no log transformation",
+      "intensity_color_limits": "within-matrix observed-value 1st and 99th percentiles",
+      "intensity_colormap": "magma",
+      "missing_values": "grey in intensity panel; observed/missing binary panel above",
+      "sample_order": "specimen (CSF, PB, Unknown), cohort, sample_id",
+      "group_labels": "specimen / cohort on both panels",
+      "outlier_display": "separate right-side annotation; never drawn over heatmap cells",
+      "analysis_scopes": "ALL at 02_data_distribution root; CSF and PB under by_specimen/<specimen>"
+    },
+    "pca": {
+      "features": "all complete-case, nonconstant common-panel PROBEIDs within each analysis subset; no MAD/variance top-N selection",
+      "transform": "none; stored input values",
+      "missing_values": "exclude the entire feature if any value is missing in the analysis subset; no imputation",
+      "scaling": "mean centering only; no variance scaling",
+      "analysis_scopes": "ALL at 02_data_distribution root; CSF and PB under by_specimen/<specimen>"
+    },
+    "outlier_candidate": {
+      "rule": "descriptive_outlier OR pca_outlier",
+      "descriptive": "at least two of input-value median, input-value IQR, and missing-rate robust-z flags",
+      "robust_z_group": "cohort and specimen"
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/proteomics/cohorts/1_raw/EMORY_7K_DL_Feature_Matrix.csv",
+      "size_bytes": 6751164,
+      "sha256": "a5d579bff604fcf5107b68660f6c89085f234c2067fbd9d58a6ca88d78bbd627"
+    },
+    {
+      "path": "data/proteomics/cohorts/1_raw/KIST_11K_DL_Feature_Matrix.csv",
+      "size_bytes": 2639141,
+      "sha256": "2cd4576428b20f144686137d127cfdea64febbb32e10a34b71f4ba8cc88b12a9"
+    },
+    {
+      "path": "data/proteomics/cohorts/1_raw/KIST_7K_DL_Feature_Matrix.csv",
+      "size_bytes": 4435661,
+      "sha256": "37b99de8849ebb262857157bb448e2d9f6595fd5b63f79a46cdca1a326e98beb"
+    },
+    {
+      "path": "data/proteomics/cohorts/1_raw/SU_5K7K_DL_Feature_Matrix.csv",
+      "size_bytes": 5253703,
+      "sha256": "ac3d885901d9826f2aae179e45300f5361fd0be020ce1dc0ac89b97a640bd0b6"
+    },
+    {
+      "path": "data/metadata/Proteomics_metadata.csv",
+      "size_bytes": 22128,
+      "sha256": "a59d4712085e68d987799107612e8a577c04b334501d3ebb40af92f278614e9e"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/00_raw/proteomics/01_descriptive_statistics/data_summary.csv",
+      "size_bytes": 1056,
+      "sha256": "747d84861c1ca2a946698e1d63cc57cd544aaa290bc7944fe0f7f9a2f4b2318b"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/01_descriptive_statistics/intensity_distribution.png",
+      "size_bytes": 124593,
+      "sha256": "af1e7d557a235f712fd0deb47d0aacbd7c819a670b8e4b2bf5060a4a68c1d259"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/01_descriptive_statistics/sample_statistics.csv",
+      "size_bytes": 100351,
+      "sha256": "3bb0e0484effe741402eccb99bdff80735e771e88b5ea5e7caa84b552a9db744"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/01_descriptive_statistics/protein_statistics.csv",
+      "size_bytes": 2223343,
+      "sha256": "93d7f596792e02daffc9c8fb0b1c25b1772b587fff936a22c349f9025dfc6f9f"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/01_descriptive_statistics/outlier_candidates.csv",
+      "size_bytes": 1375,
+      "sha256": "f92488cc7204d95e4bf6f6a5f15958340598ee6bce57fdd211bc1d1cfcbf5f4c"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/heatmap.png",
+      "size_bytes": 694007,
+      "sha256": "2185d7ba42841761fcd482a879c237f0d3554df8616529be3bccaacffedea322"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/pca_metadata.png",
+      "size_bytes": 354335,
+      "sha256": "a3a27470e5bed8e10aafb27b42b166b06aa8afc8c55e2f5673efe5c44563af55"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/pca_3d.png",
+      "size_bytes": 358593,
+      "sha256": "7cb37210798ab3db407322ade8625a14062dd10165b5cfd32ecc4b2df2f6f19c"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/pca_3d_interactive.html",
+      "size_bytes": 5009858,
+      "sha256": "6c00bf2fcfa8a23b9a5b1b21aeba5fc300a81ad9b4b6033b3c41e94f247fb6b5"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/pca_scores.csv",
+      "size_bytes": 278497,
+      "sha256": "4fabbe29c2d55afc8c12483f5d89c69802189e95b344fe6410258f5866a28ece"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/CSF/heatmap.png",
+      "size_bytes": 422622,
+      "sha256": "eef5849ed71cb353fe33caf1834f5227471efc5af91a4ceb0eea40b52745e0c7"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/CSF/pca_metadata.png",
+      "size_bytes": 349150,
+      "sha256": "18896d83ad04462e564b39b63e6f5cb8380c498c325d4c2c706a659add398d63"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/CSF/pca_3d.png",
+      "size_bytes": 372926,
+      "sha256": "7dcaf03a24880566ac76cd1e59091187db26ec203431183e7de78e8eaac694f6"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/CSF/pca_3d_interactive.html",
+      "size_bytes": 4963391,
+      "sha256": "79179ca8eced74d4b869dafc362024bc7f503807a4753cb6c540be9f768a4d5c"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/CSF/pca_scores.csv",
+      "size_bytes": 204877,
+      "sha256": "2b901afe2874620e57acc2de8947f1836028a638a4b7c335f0ae04a845654a19"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/PB/heatmap.png",
+      "size_bytes": 428713,
+      "sha256": "fe70220b5bde81f8f39cb261298d3bb99e4dbc7bb1da807633d1f6b2665130d7"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/PB/pca_metadata.png",
+      "size_bytes": 380434,
+      "sha256": "8385ba51008a23b49e3a977ef8faa78c0f11ce378ba4078870539f291042dcb2"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/PB/pca_3d.png",
+      "size_bytes": 370030,
+      "sha256": "5df8f774ef5f6c3f75ba81af3fa71a3e0bce13d1e909a7c2936a59ab085aff75"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/PB/pca_3d_interactive.html",
+      "size_bytes": 4886123,
+      "sha256": "e63f35ee207025c91985d96eab8133d34c6f795fac163ee85dd02a5051e6f238"
+    },
+    {
+      "path": "experiments/00_raw/proteomics/02_data_distribution/by_specimen/PB/pca_scores.csv",
+      "size_bytes": 73004,
+      "sha256": "66295debd8830f84670d49f1c29745c0dafa12dc456ad9eec55c804b971efe5f"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/proteomics_raw_qc.py",
+      "size_bytes": 51985,
+      "sha256": "7bcb5540046e15dca6bac8c5e276e6cebcaa92e636fed8f6f8c4a6570cba823d"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    },
+    {
+      "path": "code/src/run_proteomics_raw_qc.py",
+      "size_bytes": 1051,
+      "sha256": "b7fd7aac7e9531a13d2f699953ecaef1cdc652394c1a9c1a43d7b93b75023d3d"
+    },
+    {
+      "path": "C:\\Research\\ProjectCode\\gene-analysis\\pyproject.toml",
+      "size_bytes": 333,
+      "sha256": "b15f3b82bd31277ba9b1b2e9283668c6fefce7410b3ba8a26e433ef33a99eb29"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "plotly": "7.1.0"
+    }
+  }
+}

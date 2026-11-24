@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "pipeline": "batch_corrected_proteomics_csf_before_preprocess_qc",
+  "generated_at_utc": "2026-11-18T07:39:00.390606+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "scope": "CSF",
+    "cis_excluded": true,
+    "analysis_state": "before_pywgcna_preprocess"
+  },
+  "generation_rules": {
+    "input": "CIS-excluded received batch-corrected matrix",
+    "scope_definition": "retained CSF samples only",
+    "statistics_and_figures": "same raw-scale/no-additional-transform QC rules as the batch-corrected baseline",
+    "pca": "complete-case nonconstant features, mean centering only, no imputation or top-N selection"
+  },
+  "inputs": [
+    {
+      "path": "experiments/01_batch_corrected/proteomics/01_sample_selection/matrices/CSF/PROT_CSF_after_cis_exclusion.csv",
+      "size_bytes": 22985000,
+      "sha256": "057b2e96d4053c3fe439342805d0528b6bcdcc3e07c1d20d2eaaccfe6ec39d3b"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/01_descriptive_statistics/data_summary.csv",
+      "size_bytes": 660,
+      "sha256": "66f67f93468bc1cacaf7034592d47f471db92e2e758c4383ad86b8d9874a3be2"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/01_descriptive_statistics/sample_statistics.csv",
+      "size_bytes": 80969,
+      "sha256": "a1c3a9ebeceb43192fabdcc3406db52c22c06dec701b13262062a645cb91930c"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/01_descriptive_statistics/protein_statistics.csv",
+      "size_bytes": 1038570,
+      "sha256": "fc11299372d49857e2d46a9aba2fd744ff290c558427e993978ca210f1416046"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/01_descriptive_statistics/outlier_candidates.csv",
+      "size_bytes": 840,
+      "sha256": "bd37d030fdcae7cd65e7587ca8fba1953ea899fe6ff8eeaf0cbcdd4f39d67480"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/01_descriptive_statistics/intensity_distribution.png",
+      "size_bytes": 176168,
+      "sha256": "6eaaa7be9767969c02709182c659487c6a95504d6cd026eb8e7eb801ca976473"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/02_data_distribution/heatmap.png",
+      "size_bytes": 1629635,
+      "sha256": "ba2ceb9dcab50586d1844b08149b794e3b34ded04373564f744822715f183f5e"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/02_data_distribution/pca_metadata.png",
+      "size_bytes": 602763,
+      "sha256": "d7a95d1bace696162a294637bbedd82d98ff2e5f9cc0bcca6af9b371cb75e02d"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/02_data_distribution/pca_3d.png",
+      "size_bytes": 385134,
+      "sha256": "22756eb921a426a0e5b6d5414168d28d2012c0d4cfe51dc238ec50e70ea3fbb1"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/02_data_distribution/pca_3d_interactive.html",
+      "size_bytes": 4958955,
+      "sha256": "a46762c21ddfa41566cd68203282dfe109bf7cd5abaf01964e5b9f81128686a8"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/CSF/02_data_distribution/pca_scores.csv",
+      "size_bytes": 197093,
+      "sha256": "f968f5f6cb2ba2b71f89219f7fc8a457f7fd22082eaf2c1e9cf99f39a343b37d"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_proteomics_preprocess_diagnostic.py",
+      "size_bytes": 27287,
+      "sha256": "e3d61330a586915df1f267f795b47c4c7f58e99dc7da3a0c32ab06cfc5e555a4"
+    },
+    {
+      "path": "code/src/proteomics_raw_qc.py",
+      "size_bytes": 52903,
+      "sha256": "f4697c91cba497ddde2c38a45a0746eea9dbcb72105154f28da4b9e7103c4f4e"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "plotly": "7.1.0"
+    }
+  }
+}

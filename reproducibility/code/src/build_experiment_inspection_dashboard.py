@@ -1438,6 +1438,217 @@ def build_proteomics_modules(
     return source, records
 
 
+def build_proteomics_batch_correction_qc(
+    run_root: Path,
+    dashboard_root: Path,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Expose the saved raw and batch-corrected proteomics QC side by side.
+
+    No values are recalculated here.  The adapter links the already generated
+    raw-scale heatmaps and complete-case, mean-centred PCA outputs so that the
+    effect of batch correction can be inspected without changing either run.
+    """
+
+    raw_root = run_root / "experiments/00_raw/proteomics"
+    corrected_root = run_root / "experiments/01_batch_corrected/proteomics"
+    records: list[dict[str, Any]] = []
+
+    for state in ("00_raw", "01_batch_corrected"):
+        for specimen in ("ALL", "CSF", "PB"):
+            if state == "00_raw":
+                stage_root = raw_root
+                distribution_relative = (
+                    "02_data_distribution"
+                    if specimen == "ALL"
+                    else f"02_data_distribution/by_specimen/{specimen}"
+                )
+                descriptive_relative = (
+                    "01_descriptive_statistics" if specimen == "ALL" else None
+                )
+                manifest_relative = "run_manifest.json" if specimen == "ALL" else None
+                state_label = "Raw"
+            else:
+                stage_root = corrected_root
+                scope_relative = f"02_before_preprocess/{specimen}"
+                distribution_relative = f"{scope_relative}/02_data_distribution"
+                descriptive_relative = f"{scope_relative}/01_descriptive_statistics"
+                manifest_relative = f"{scope_relative}/run_manifest.json"
+                state_label = "Batch corrected"
+
+            pca_path = stage_root / distribution_relative / "pca_scores.csv"
+            if not pca_path.exists():
+                continue
+            pca_rows = read_csv_rows(pca_path)
+            pca_first = pca_rows[0] if pca_rows else {}
+
+            summary_rows: list[dict[str, str]] = []
+            if descriptive_relative:
+                summary_path = stage_root / descriptive_relative / "data_summary.csv"
+                if summary_path.exists():
+                    summary_rows = read_csv_rows(summary_path)
+            summary = next(
+                (row for row in summary_rows if row.get("scope") == specimen),
+                summary_rows[0] if len(summary_rows) == 1 else {},
+            )
+
+            artifacts: list[dict[str, str]] = []
+            for artifact_id, label, filename, kind in (
+                ("qc_heatmap", "Heatmap", "heatmap.png", "image"),
+                ("qc_pca_metadata", "PCA metadata", "pca_metadata.png", "image"),
+                ("qc_pca_3d", "PCA 3D", "pca_3d.png", "image"),
+                (
+                    "qc_pca_3d_interactive",
+                    "PCA 3D interactive",
+                    "pca_3d_interactive.html",
+                    "html",
+                ),
+            ):
+                existing_artifact(
+                    artifacts,
+                    stage_root,
+                    dashboard_root,
+                    artifact_id,
+                    label,
+                    f"{distribution_relative}/{filename}",
+                    "data distribution",
+                    kind,
+                )
+            if descriptive_relative:
+                existing_artifact(
+                    artifacts,
+                    stage_root,
+                    dashboard_root,
+                    "qc_intensity_distribution",
+                    "Intensity distribution",
+                    f"{descriptive_relative}/intensity_distribution.png",
+                    "descriptive statistics",
+                )
+
+            files: list[dict[str, str]] = []
+            existing_file(
+                files,
+                stage_root,
+                dashboard_root,
+                "qc_pca_scores",
+                "PCA scores",
+                f"{distribution_relative}/pca_scores.csv",
+                "PCA",
+            )
+            if descriptive_relative:
+                for file_id, label, filename, category in (
+                    ("qc_data_summary", "Data summary", "data_summary.csv", "summary"),
+                    (
+                        "qc_sample_statistics",
+                        "Sample statistics",
+                        "sample_statistics.csv",
+                        "descriptive statistics",
+                    ),
+                    (
+                        "qc_protein_statistics",
+                        "Protein statistics",
+                        "protein_statistics.csv",
+                        "descriptive statistics",
+                    ),
+                    (
+                        "qc_outlier_candidates",
+                        "Outlier candidates",
+                        "outlier_candidates.csv",
+                        "outlier",
+                    ),
+                ):
+                    existing_file(
+                        files,
+                        stage_root,
+                        dashboard_root,
+                        file_id,
+                        label,
+                        f"{descriptive_relative}/{filename}",
+                        category,
+                    )
+            if manifest_relative:
+                existing_file(
+                    files,
+                    stage_root,
+                    dashboard_root,
+                    "qc_run_manifest",
+                    "QC run manifest",
+                    manifest_relative,
+                    "provenance",
+                )
+
+            samples = len(pca_rows) or parse_number(summary.get("samples"))
+            genes = (
+                parse_number(pca_first.get("pca_features_used"))
+                or parse_number(summary.get("pca_features_used"))
+                or parse_number(summary.get("features"))
+            )
+            records.append(
+                {
+                    "id": f"proteomics_qc::{state}::{specimen}",
+                    "source_id": "proteomics_batch_correction_qc",
+                    "title": f"Proteomics {specimen} · {state_label}",
+                    "dimensions": {
+                        "threshold": "batch_correction",
+                        "strategy": state,
+                        "mode": "proteomics_qc",
+                        "specimen": specimen,
+                        "cell_type": "ALL",
+                        "condition": state,
+                    },
+                    "status": "complete_qc",
+                    "metrics": {
+                        "samples": samples,
+                        "genes": genes,
+                        "selected_power": None,
+                        "selected_power_sft_r2": None,
+                        "selected_power_mean_connectivity": None,
+                        "dynamic_modules": None,
+                        "final_modules": None,
+                        "unassigned_fraction": None,
+                        "largest_module_fraction": None,
+                        "median_abs_kme": None,
+                        "runtime_seconds": None,
+                        "finite_cut_applied": False,
+                        "selected_cut": None,
+                        "samples_removed_by_cut": None,
+                        "distance_flagged_before_cut": None,
+                        "collapsed": False,
+                        "diagnosis_tests": None,
+                        "minimum_diagnosis_q": None,
+                    },
+                    "flags": [
+                        {
+                            "level": "note",
+                            "code": "saved_qc_no_recalculation",
+                            "label": "Saved QC output; no dashboard-side recalculation",
+                        }
+                    ],
+                    "artifacts": artifacts,
+                    "files": files,
+                    "modules": [],
+                    "provenance": {
+                        "network_id": f"proteomics_qc_{state}_{specimen}",
+                        "analysis_state": state,
+                        "pca_feature_selection": pca_first.get("pca_feature_selection"),
+                        "pca_missing_handling": pca_first.get("pca_missing_handling"),
+                        "pca_transform": pca_first.get("pca_transform"),
+                        "pca_scaling": pca_first.get("pca_scaling"),
+                    },
+                }
+            )
+
+    source = {
+        "id": "proteomics_batch_correction_qc",
+        "label": "Proteomics raw vs batch-corrected QC",
+        "stage": "00_raw_and_01_batch_corrected",
+        "summary_path": dashboard_relative(
+            raw_root / "01_descriptive_statistics/data_summary.csv", dashboard_root
+        ),
+        "record_count": len(records),
+    }
+    return source, records
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -1872,9 +2083,16 @@ def build(run_root: Path) -> None:
     transcriptomics_source, transcriptomics_records = build_variance_filtered_transcriptomics(
         run_root, dashboard_root
     )
+    proteomics_qc_source, proteomics_qc_records = build_proteomics_batch_correction_qc(
+        run_root, dashboard_root
+    )
     proteomics_source, proteomics_records = build_proteomics_modules(run_root, dashboard_root)
-    sources = [transcriptomics_source, proteomics_source]
-    records = [*transcriptomics_records, *proteomics_records]
+    sources = [transcriptomics_source, proteomics_qc_source, proteomics_source]
+    records = [
+        *transcriptomics_records,
+        *proteomics_qc_records,
+        *proteomics_records,
+    ]
     validate_records(records, dashboard_root)
     module_members = build_module_member_shards(records, dashboard_root)
     cross_omics_overlap = build_cross_omics_overlap_shards(records, dashboard_root)
@@ -2526,9 +2744,9 @@ DASHBOARD_HTML = r'''<!doctype html>
 <script>
 const bundle=window.EXPERIMENT_DASHBOARD_DATA;const records=bundle.records;const storageKey=`experiment-review:${bundle.schema_version}:${bundle.run_root}`;let reviews=JSON.parse(localStorage.getItem(storageKey)||'{}');let selectedId=records[0]?.id||null;let artifactChoice={};let comparisonArtifactChoice=null;let comparisonHierarchyChoice={specimen:null,threshold:null};let compareIds=[];
 const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const fmt=(v,d=2)=>v===null||v===undefined||v===''?'—':typeof v==='number'?v.toLocaleString(undefined,{maximumFractionDigits:d}):esc(v);const stat=v=>v===null||v===undefined||v===''?'—':typeof v==='number'&&Math.abs(v)>0&&Math.abs(v)<0.0001?v.toExponential(2):fmt(v,4);const pct=v=>v===null||v===undefined?'—':`${(v*100).toFixed(1)}%`;
-const finalJaccardOption=document.createElement('option');finalJaccardOption.value='final_jaccard';finalJaccardOption.textContent='Final CSF Jaccard';$('viewMode').insertBefore(finalJaccardOption,$('viewMode').options[1]||null);
+const finalJaccardOption=document.createElement('option');finalJaccardOption.value='final_jaccard';finalJaccardOption.textContent='Final Jaccard Similarity Heatmap';$('viewMode').insertBefore(finalJaccardOption,$('viewMode').options[1]||null);
 const finalJaccardMain=document.createElement('main');finalJaccardMain.className='final-jaccard-only';finalJaccardMain.id='finalJaccardPage';finalJaccardMain.innerHTML='<iframe class="final-jaccard-page" src="final-jaccard.html" title="Final CSF cross-omics Jaccard comparison"></iframe>';document.getElementById('cellComparison').insertAdjacentElement('afterend',finalJaccardMain);
-const artifactOrder=['feature_selection','before_heatmap','before_pca','before_pca_3d','after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d','cut_diagnostic','selected_cut','after_outlier_cut_diagnostic','after_heatmap','after_pca','after_pca_3d','soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes','diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity'];
+const artifactOrder=['qc_heatmap','qc_pca_metadata','qc_pca_3d','qc_pca_3d_interactive','qc_intensity_distribution','feature_selection','before_heatmap','before_pca','before_pca_3d','after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d','cut_diagnostic','selected_cut','after_outlier_cut_diagnostic','after_heatmap','after_pca','after_pca_3d','soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes','diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity'];
 function reviewOf(id){return reviews[id]||{decision:'unreviewed',notes:'',checks:{power:false,modules:false,outliers:false,ready:false},updated_at:null}}
 function saveReview(id,patch){reviews[id]={...reviewOf(id),...patch,updated_at:new Date().toISOString()};localStorage.setItem(storageKey,JSON.stringify(reviews));renderAll()}
 function unique(path){return [...new Set(records.map(r=>path(r)).filter(Boolean))].sort()}
@@ -2540,7 +2758,7 @@ function ensureCellForSource(){const source=$('source').value,available=unique(r
 $('source').addEventListener('change',()=>{if($('viewMode').value==='cell'){ensureCellForSource();renderAll()}});
 function filtered(){const q=$('search').value.trim().toLowerCase();let out=records.filter(r=>(!$('source').value||r.source_id===$('source').value)&&(!$('threshold').value||r.dimensions.threshold===$('threshold').value)&&(!$('strategy').value||r.dimensions.strategy===$('strategy').value)&&(!$('mode').value||r.dimensions.mode===$('mode').value)&&(!$('specimen').value||r.dimensions.specimen===$('specimen').value)&&(!$('cell').value||r.dimensions.cell_type===$('cell').value)&&(!$('status').value||r.status===$('status').value)&&(!$('decision').value||reviewOf(r.id).decision===$('decision').value)&&(!q||`${r.title} ${r.provenance.network_id} ${r.dimensions.strategy}`.toLowerCase().includes(q)));const s=$('sort').value;if(s==='modules_desc')out.sort((a,b)=>(b.metrics.final_modules??-1)-(a.metrics.final_modules??-1));if(s==='unassigned_desc')out.sort((a,b)=>(b.metrics.unassigned_fraction??-1)-(a.metrics.unassigned_fraction??-1));if(s==='runtime_desc')out.sort((a,b)=>(b.metrics.runtime_seconds??-1)-(a.metrics.runtime_seconds??-1));return out}
 function prettyDimension(v){return String(v??'—').replace(/^\d+_/,'').replaceAll('_',' ')}
-function prettyStrategy(v){return ({'01_cpm_detection':'CPM detection','02_hvg_top9000':'HVG top 9,000','03_hvg_top5000':'HVG top 5,000'})[v]||prettyDimension(v)}
+function prettyStrategy(v){return ({'00_raw':'Raw','01_batch_corrected':'Batch corrected','01_cpm_detection':'CPM detection','02_hvg_top9000':'HVG top 9,000','03_hvg_top5000':'HVG top 5,000'})[v]||prettyDimension(v)}
 function comparisonRows(){
   const source=$('source').value,cell=$('cell').value;
   return records.filter(r=>(!source||r.source_id===source)&&cell&&r.dimensions.cell_type===cell).sort((a,b)=>{

@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "pipeline": "batch_corrected_proteomics_all_before_preprocess_qc",
+  "generated_at_utc": "2026-11-18T07:38:53.322994+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119",
+  "parameters": {
+    "scope": "ALL",
+    "cis_excluded": true,
+    "analysis_state": "before_pywgcna_preprocess"
+  },
+  "generation_rules": {
+    "input": "CIS-excluded received batch-corrected matrix",
+    "scope_definition": "ALL retained CSF and PB samples before specimen split",
+    "statistics_and_figures": "same raw-scale/no-additional-transform QC rules as the batch-corrected baseline",
+    "pca": "complete-case nonconstant features, mean centering only, no imputation or top-N selection"
+  },
+  "inputs": [
+    {
+      "path": "formatted/01_batch_corrected/proteomics/pywgcna_input/ALL/PROT_ALL_expression_matrix.csv",
+      "size_bytes": 34409951,
+      "sha256": "bd85792d439c82fe8edcb4ff937afe9d33547762879fe4d9c8b9f87d66049e6b"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/01_sample_selection/sample_selection.csv",
+      "size_bytes": 35990,
+      "sha256": "f369fe86e8a002f5810c84d78543f9a291b5af4e18fea2766e9688054ddb9861"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/01_descriptive_statistics/data_summary.csv",
+      "size_bytes": 659,
+      "sha256": "7af085cef822285cde5a94c62c34d04492bb2a01a0283a96c7e9be5852ce2c49"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/01_descriptive_statistics/sample_statistics.csv",
+      "size_bytes": 117654,
+      "sha256": "c0dbd36deeea3fee41622455bcc29be56de7a008aef4e889abf2bdd71ae8ca9a"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/01_descriptive_statistics/protein_statistics.csv",
+      "size_bytes": 1031271,
+      "sha256": "ea6d8c63bc2ea258b938eea479d492e6f2dbd8da9f72b9c762fe1a69e91142d0"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/01_descriptive_statistics/outlier_candidates.csv",
+      "size_bytes": 1157,
+      "sha256": "ba8a2385edd26439cb67715747adeef38481df0abba5bc5936879a953cd5dd12"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/01_descriptive_statistics/intensity_distribution.png",
+      "size_bytes": 158848,
+      "sha256": "f6fd9639bda5658bce39382e475c5723b4df2676b6ebdcbf783b5c37b0bc44ca"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/02_data_distribution/heatmap.png",
+      "size_bytes": 2425393,
+      "sha256": "f2b1a9551242834c0025c4cfae7098c4f1be0f023d6fc927bf9f72506469b531"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/02_data_distribution/pca_metadata.png",
+      "size_bytes": 555909,
+      "sha256": "a38a5c7f5a3c1277658659fa0b83d6d3828ee7c6320cf38c4adb5d310c8004bb"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/02_data_distribution/pca_3d.png",
+      "size_bytes": 416850,
+      "sha256": "8bebef25815f594a922d0ed32edaeb56cc76497427de05b25923a73e0b7cbf8d"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/02_data_distribution/pca_3d_interactive.html",
+      "size_bytes": 5014267,
+      "sha256": "6f43f2cb80a4726ac5e58f8c8a078972a8fe28762414420d392a94f2eb07000d"
+    },
+    {
+      "path": "experiments/01_batch_corrected/proteomics/02_before_preprocess/ALL/02_data_distribution/pca_scores.csv",
+      "size_bytes": 287631,
+      "sha256": "c101c9b40269f6240af22f0c75f031610f4518d2b38105a08edc949c8aa229b0"
+    }
+  ],
+  "code": [
+    {
+      "path": "code/src/run_proteomics_preprocess_diagnostic.py",
+      "size_bytes": 27287,
+      "sha256": "e3d61330a586915df1f267f795b47c4c7f58e99dc7da3a0c32ab06cfc5e555a4"
+    },
+    {
+      "path": "code/src/proteomics_raw_qc.py",
+      "size_bytes": 52903,
+      "sha256": "f4697c91cba497ddde2c38a45a0746eea9dbcb72105154f28da4b9e7103c4f4e"
+    },
+    {
+      "path": "code/src/pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "plotly": "7.1.0"
+    }
+  }
+}
