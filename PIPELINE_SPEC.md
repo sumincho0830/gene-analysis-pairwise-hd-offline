@@ -833,6 +833,32 @@ gene universe는 각 transcriptomics 실험에서 측정 가능한 gene과 prote
 
 이 값은 module membership profile의 기술적(descriptive) overlap이다. p-value나 방향성 있는 expression correlation이 아니며, WGCNA의 공식 `modulePreservation()` 통계량을 대신하지 않는다. 조건 간 차이는 후보 패턴을 찾는 용도로 해석하고, 정식 보존성 또는 생물학적 연관성 결론에는 별도 검정이 필요하다.
 
+### Final Jaccard protein-specimen sensitivity view
+
+The primary Final Jaccard analysis fixes the transcriptomics specimen to CSF.
+The established specimen-matched branch is therefore `CSF RNA x CSF protein`.
+To inspect whether conclusions depend on the protein specimen, a separate
+sensitivity branch computes `CSF RNA x PB protein` with the identical gene
+normalisation, representative-probe collapse, common-gene universe, module
+exclusion rule, and absolute-own-kME weighted Jaccard formula.
+
+`code/src/build_final_jaccard_protein_scope.py` writes the additional PB
+comparison tables under
+`experiments/05_cross_omics_module_similarity/final_jaccard_protein_scope/`
+and registers lazy offline overlap shards. The dashboard offers three views:
+
+- `All protein networks`: one CSF RNA-module row with CSF and PB protein-module
+  columns shown side by side and explicitly prefixed by specimen.
+- `CSF protein`: the original specimen-matched result only.
+- `PB protein`: the new cross-specimen sensitivity result only.
+
+PB-protein cells open the same module-pair inspector, but protein membership
+and diagnosis evidence are resolved from the PB proteomics network while RNA
+membership and diagnosis evidence remain tied to the selected CSF transcript
+network. These two protein-network branches are descriptive comparisons; the
+existing permutation bubble figures remain CSF-protein-specific unless a
+separate PB permutation run is explicitly generated.
+
 ## 17. Direct disease-versus-HD module–diagnosis heatmap
 
 module–diagnosis 분석의 주 결과는 PyWGCNA의 다범주 one-hot trait가 아니라 `MS vs HD`, `MOGAD vs HD`, `NMOSD vs HD` 직접 대조로 고정한다. PyWGCNA의 다범주 `getDatTraits()`는 각 diagnosis를 나머지 모든 diagnosis와 비교하므로 `MS` 행에 MOGAD와 NMOSD가 대조군으로 들어간다. 이는 이 프로젝트의 질환별 HD 대조 질문과 다르다.

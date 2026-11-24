@@ -1,5 +1,20 @@
 # Pipeline change log
 
+## 2026-11-24 - Compare CSF RNA with CSF and PB protein networks
+
+- Preserved the established specimen-matched `CSF RNA x CSF protein` results.
+- Added a sensitivity branch that recomputes the same absolute-own-kME
+  weighted Jaccard statistic for `CSF RNA x PB protein`; no CSF result is
+  relabelled or reused as PB.
+- Added `All protein networks`, `CSF protein`, and `PB protein` controls to the
+  Final Jaccard page. In the combined view, one RNA row is retained while CSF
+  and PB protein-module columns are labelled separately.
+- Added 138 PB-protein comparison records: 12 cell types per threshold-5
+  condition and 11 saved cell types per threshold-10 condition, for three
+  feature strategies and both outlier-removal states.
+- Extended module-pair inspection so PB selections load PB protein membership
+  and diagnosis evidence while reusing the exact selected CSF RNA network.
+
 ## 2026-11-24 - Restore post-preprocess outlier-removal comparison
 
 - Generated the standard ten descriptive/distribution outputs from each saved

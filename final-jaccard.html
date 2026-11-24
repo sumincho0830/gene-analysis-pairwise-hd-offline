@@ -8,7 +8,7 @@
 :root{--ink:#20272d;--muted:#66717a;--line:#d9dde0;--soft:#f6f7f8;--accent:#1f6485;--selected:#eaf2f6;--warm:#b85017}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,"Malgun Gothic",sans-serif;color:var(--ink);background:#fff;font-size:16px}
 header{padding:28px 34px 18px;border-bottom:1px solid var(--line)}h1{font-size:1.55rem;font-weight:500;margin:0 0 7px}p{margin:0;color:var(--muted);line-height:1.5}
-main{padding:22px 34px 64px;max-width:1900px;margin:auto}.controls{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:18px;padding-bottom:17px;border-bottom:1px solid var(--line)}
+main{padding:22px 34px 64px;max-width:1900px;margin:auto}.controls{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:18px;padding-bottom:17px;border-bottom:1px solid var(--line)}
 .control-label{display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}.button-row{display:flex;flex-wrap:wrap;gap:6px}
 button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;text-decoration:none}button:hover,.action:hover{background:var(--soft)}button.active{background:var(--selected);border-color:#90aab8;font-weight:700}
 .summary{display:flex;flex-wrap:wrap;gap:8px 22px;margin:16px 0;padding:11px 13px;border:1px solid var(--line);background:var(--soft);font-size:.87rem}.summary b{font-variant-numeric:tabular-nums}
@@ -23,9 +23,10 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
 </style>
 </head>
 <body>
-<header><h1>Final CSF RNA–protein module comparison</h1><p>All cell types except <code>other</code> · all CSF protein modules · saved kME-weighted Jaccard values</p></header>
+<header><h1>Final CSF RNA–protein module comparison</h1><p>All cell types except <code>other</code> · compare CSF RNA modules with CSF, PB, or both protein networks · saved kME-weighted Jaccard values</p></header>
 <main>
   <section class="controls" aria-label="Analysis condition">
+    <div><span class="control-label">Protein network</span><div class="button-row" id="proteinScopeControls"></div></div>
     <div><span class="control-label">Cell threshold</span><div class="button-row" id="thresholdControls"></div></div>
     <div><span class="control-label">Feature strategy</span><div class="button-row" id="strategyControls"></div></div>
     <div><span class="control-label">Outlier removal</span><div class="button-row" id="removalControls"></div></div>
@@ -35,10 +36,10 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
   <div class="publication"><span><b>Publication figure</b> · CSF · threshold 5 cells · HVG top 9,000 · after outlier removal</span><span class="publication-links"><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.png">PNG</a><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.pdf">PDF</a><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.svg">SVG</a></span></div>
   <div class="publication"><span><b>Permutation bubble</b> · threshold 5 cells · 4,500 tests · no q≤0.25 pair</span><span class="publication-links"><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.png">PNG</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.pdf">PDF</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.svg">SVG</a><a class="action" href="figures/final_jaccard_bubble/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_statistics.csv.gz">Statistics</a></span></div>
   <div class="publication"><span><b>Permutation bubble</b> · threshold 10 cells · 3,060 tests · five exploratory q≤0.25 pairs</span><span class="publication-links"><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.png">Full PNG</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble.pdf">Full PDF</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_candidate_rows_q0p25.png">Candidates PNG</a><a class="action" target="_blank" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_candidate_rows_q0p25.pdf">Candidates PDF</a><a class="action" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_candidate_shared_genes.csv.gz">Shared genes</a><a class="action" href="figures/final_jaccard_bubble/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_candidate_diagnosis_concordance.csv">Disease evidence</a></span></div>
-  <div class="section-head"><div><h2>All cell type–RNA modules × all protein modules</h2><p>Rows are grouped by cell type. Click a value to inspect shared, RNA-only, and protein-only genes in the original module comparison.</p></div><div class="legend"><span>0</span><span class="gradient"></span><span id="legendMax">max</span></div></div>
+  <div class="section-head"><div><h2 id="matrixTitle">All cell type–RNA modules × CSF and PB protein modules</h2><p>Rows are grouped by cell type. Click a value to inspect shared, RNA-only, and protein-only genes without leaving this page.</p></div><div class="legend"><span>0</span><span class="gradient"></span><span id="legendMax">max</span></div></div>
   <div class="heatmap-wrap" id="heatmap"></div>
   <div class="section-head"><div><h2>Highest similarity pairs</h2><p>Descriptive explorer; use the linked permutation figures and statistics files for p and BH-FDR q.</p></div><div class="actions"><button id="downloadCsv">Download current CSV</button></div></div>
-  <div class="table-wrap"><table class="ranking"><thead><tr><th>#</th><th>Cell type</th><th>RNA module</th><th>Protein module</th><th>Weighted Jaccard</th><th>Plain Jaccard</th><th>Shared genes</th><th>Best-match status</th><th>Genes</th></tr></thead><tbody id="ranking"></tbody></table></div>
+  <div class="table-wrap"><table class="ranking"><thead><tr><th>#</th><th>Cell type</th><th>RNA module</th><th>Protein network</th><th>Protein module</th><th>Weighted Jaccard</th><th>Plain Jaccard</th><th>Shared genes</th><th>Best-match status</th><th>Genes</th></tr></thead><tbody id="ranking"></tbody></table></div>
 </main>
 <script src="cross-omics-overlap/overlap-index.js"></script>
 <script>
@@ -46,20 +47,21 @@ const records=(window.CROSS_OMICS_OVERLAP_INDEX&&window.CROSS_OMICS_OVERLAP_INDE
 const thresholds=[['threshold_5_cells','5 cells'],['threshold_10_cells','10 cells']];
 const strategies=[['01_cpm_detection','CPM only'],['02_hvg_top9000','HVG top 9,000'],['03_hvg_top5000','HVG top 5,000']];
 const removals=[['before','Before outlier removal'],['after','After outlier removal']];
+const proteinScopes=[['all','All protein networks'],['CSF','CSF protein'],['PB','PB protein']];
 const cellOrder=['B_cell','CD4_T_cell','CD8_T_cell','cDCs','Classical_Monocytes','Macrophages','MAIT_gDT_cell','NK_cell','Non_classical_Monocytes','pDCs','Plasmablast','Proliferating_T_cell'];
-const state={threshold:'threshold_5_cells',strategy:'02_hvg_top9000',removal:'after'};
+const state={proteinScope:'all',threshold:'threshold_5_cells',strategy:'02_hvg_top9000',removal:'after'};
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const pretty=value=>String(value??'').replaceAll('_',' ');
 const pairObject=(entry,row)=>Object.fromEntries(entry.pair_columns.map((column,index)=>[column,row[index]]));
 function dimensions(recordId,entry){
-  const parts=String(recordId).split('::'),after=parts[parts.length-1]==='after_outlier',base=after?parts.slice(0,-1):parts;
-  return {threshold:entry.threshold||base[1],strategy:entry.strategy||base[2],mode:entry.mode||base[3],specimen:entry.specimen||base[4],cellType:entry.cell_type||base[5],removal:after?'after':'before'};
+  const parts=String(recordId).split('::'),after=entry.analysis_branch==='after_outlier_removal'||parts.includes('after_outlier'),base=parts.filter(part=>part!=='after_outlier'&&!part.startsWith('protein_'));
+  return {threshold:entry.threshold||base[1],strategy:entry.strategy||base[2],mode:entry.mode||base[3],specimen:entry.specimen||base[4],proteinSpecimen:entry.protein_specimen||entry.specimen||base[4],cellType:entry.cell_type||base[5],removal:after?'after':'before',transcriptRecordId:entry.transcript_record_id||String(recordId).replace(/::protein_(CSF|PB)$/,'')};
 }
 function selectedRecords(){
-  return Object.entries(records).map(([id,entry])=>({id,entry,dimensions:dimensions(id,entry)})).filter(item=>item.dimensions.specimen==='CSF'&&item.dimensions.mode==='cell_separate'&&item.dimensions.cellType.toLowerCase()!=='other'&&item.dimensions.threshold===state.threshold&&item.dimensions.strategy===state.strategy&&item.dimensions.removal===state.removal).sort((a,b)=>(cellOrder.indexOf(a.dimensions.cellType)<0?999:cellOrder.indexOf(a.dimensions.cellType))-(cellOrder.indexOf(b.dimensions.cellType)<0?999:cellOrder.indexOf(b.dimensions.cellType))||a.dimensions.cellType.localeCompare(b.dimensions.cellType));
+  return Object.entries(records).map(([id,entry])=>({id,entry,dimensions:dimensions(id,entry)})).filter(item=>item.dimensions.specimen==='CSF'&&item.dimensions.mode==='cell_separate'&&item.dimensions.cellType.toLowerCase()!=='other'&&item.dimensions.threshold===state.threshold&&item.dimensions.strategy===state.strategy&&item.dimensions.removal===state.removal&&(state.proteinScope==='all'||item.dimensions.proteinSpecimen===state.proteinScope)).sort((a,b)=>(cellOrder.indexOf(a.dimensions.cellType)<0?999:cellOrder.indexOf(a.dimensions.cellType))-(cellOrder.indexOf(b.dimensions.cellType)<0?999:cellOrder.indexOf(b.dimensions.cellType))||a.dimensions.cellType.localeCompare(b.dimensions.cellType)||a.dimensions.proteinSpecimen.localeCompare(b.dimensions.proteinSpecimen));
 }
 function selectedPairs(){
-  const output=[];for(const item of selectedRecords())for(const row of item.entry.pairs){const pair=pairObject(item.entry,row);output.push({...pair,recordId:item.id,cellType:item.dimensions.cellType})}return output;
+  const output=[];for(const item of selectedRecords())for(const row of item.entry.pairs){const pair=pairObject(item.entry,row);output.push({...pair,recordId:item.id,transcriptRecordId:item.dimensions.transcriptRecordId,cellType:item.dimensions.cellType,proteinSpecimen:item.dimensions.proteinSpecimen})}return output;
 }
 function deepLink(pair){const query=new URLSearchParams({cross_record:pair.recordId,transcript_module:pair.transcript_module,proteomics_module:pair.proteomics_module});return `index.html?${query.toString()}`}
 function openPairWithoutLeavingFinalPage(event){
@@ -73,37 +75,39 @@ function openPairWithoutLeavingFinalPage(event){
 document.addEventListener('click',openPairWithoutLeavingFinalPage);
 function renderControls(){
   const group=(id,values,key)=>document.getElementById(id).innerHTML=values.map(([value,label])=>`<button type="button" data-key="${key}" data-value="${value}" class="${state[key]===value?'active':''}">${label}</button>`).join('');
-  group('thresholdControls',thresholds,'threshold');group('strategyControls',strategies,'strategy');group('removalControls',removals,'removal');
+  group('proteinScopeControls',proteinScopes,'proteinScope');group('thresholdControls',thresholds,'threshold');group('strategyControls',strategies,'strategy');group('removalControls',removals,'removal');
   document.querySelectorAll('[data-key]').forEach(button=>button.onclick=()=>{state[button.dataset.key]=button.dataset.value;render()});
 }
 function renderHeatmap(pairs){
-  const recordsNow=selectedRecords(),pairMap=new Map(pairs.map(pair=>[`${pair.recordId}\u0000${pair.transcript_module}\u0000${pair.proteomics_module}`,pair]));
-  const proteinModules=[...new Set(pairs.map(pair=>pair.proteomics_module))].sort((a,b)=>a.localeCompare(b));
+  const recordsNow=selectedRecords(),pairMap=new Map(pairs.map(pair=>[`${pair.transcriptRecordId}\u0000${pair.transcript_module}\u0000${pair.proteinSpecimen}\u0000${pair.proteomics_module}`,pair]));
+  const proteinColumns=[...new Map(pairs.map(pair=>[`${pair.proteinSpecimen}\u0000${pair.proteomics_module}`,{specimen:pair.proteinSpecimen,module:pair.proteomics_module}])).values()].sort((a,b)=>a.specimen.localeCompare(b.specimen)||a.module.localeCompare(b.module));
   const maxValue=Math.max(0,...pairs.map(pair=>Number(pair.weighted_jaccard)||0));document.getElementById('legendMax').textContent=maxValue.toFixed(3);
-  const rows=[];for(const item of recordsNow){
-    const moduleMax=new Map(item.entry.transcript_modules.map(module=>[module,Math.max(0,...proteinModules.map(protein=>Number(pairMap.get(`${item.id}\u0000${module}\u0000${protein}`)?.weighted_jaccard)||0))]));
-    const modules=[...item.entry.transcript_modules].sort((a,b)=>moduleMax.get(b)-moduleMax.get(a)||a.localeCompare(b));
-    modules.forEach((module,index)=>rows.push({item,module,cellStart:index===0}));
+  const transcriptGroups=[...new Map(recordsNow.map(item=>[item.dimensions.transcriptRecordId,item])).values()];
+  const rows=[];for(const item of transcriptGroups){
+    const modules=[...new Set(recordsNow.filter(candidate=>candidate.dimensions.transcriptRecordId===item.dimensions.transcriptRecordId).flatMap(candidate=>candidate.entry.transcript_modules))];
+    const moduleMax=new Map(modules.map(module=>[module,Math.max(0,...proteinColumns.map(protein=>Number(pairMap.get(`${item.dimensions.transcriptRecordId}\u0000${module}\u0000${protein.specimen}\u0000${protein.module}`)?.weighted_jaccard)||0))]));
+    modules.sort((a,b)=>moduleMax.get(b)-moduleMax.get(a)||a.localeCompare(b)).forEach((module,index)=>rows.push({item,module,cellStart:index===0}));
   }
-  const header=proteinModules.map(module=>`<th class="rotate"><span>${esc(module)}</span></th>`).join('');
-  const body=rows.map(({item,module,cellStart})=>`<tr class="${cellStart?'cell-start':''}"><th class="row-label">${esc(pretty(item.dimensions.cellType))} · ${esc(module)}</th>${proteinModules.map(protein=>{const pair=pairMap.get(`${item.id}\u0000${module}\u0000${protein}`);if(!pair)return '<td>NA</td>';const value=Number(pair.weighted_jaccard)||0,intensity=maxValue?value/maxValue:0,alpha=(.05+.9*intensity).toFixed(3),marker=pair.reciprocal_best?'★':pair.transcript_best?'•':'';return `<td><a target="_top" href="${esc(deepLink(pair))}" class="${intensity>.68?'high':''} ${pair.reciprocal_best?'reciprocal':''}" style="background:rgba(31,100,133,${alpha})" title="${esc(pretty(item.dimensions.cellType))} ${esc(module)} × protein ${esc(protein)}; weighted Jaccard ${value.toFixed(4)}">${value.toFixed(3)}${marker}</a></td>`}).join('')}</tr>`).join('');
+  const header=proteinColumns.map(protein=>`<th class="rotate"><span>${state.proteinScope==='all'?`${esc(protein.specimen)} · `:''}${esc(protein.module)}</span></th>`).join('');
+  const body=rows.map(({item,module,cellStart})=>`<tr class="${cellStart?'cell-start':''}"><th class="row-label">${esc(pretty(item.dimensions.cellType))} · ${esc(module)}</th>${proteinColumns.map(protein=>{const pair=pairMap.get(`${item.dimensions.transcriptRecordId}\u0000${module}\u0000${protein.specimen}\u0000${protein.module}`);if(!pair)return '<td>NA</td>';const value=Number(pair.weighted_jaccard)||0,intensity=maxValue?value/maxValue:0,alpha=(.05+.9*intensity).toFixed(3),marker=pair.reciprocal_best?'★':pair.transcript_best?'•':'';return `<td><a target="_top" href="${esc(deepLink(pair))}" class="${intensity>.68?'high':''} ${pair.reciprocal_best?'reciprocal':''}" style="background:rgba(31,100,133,${alpha})" title="${esc(pretty(item.dimensions.cellType))} ${esc(module)} × ${esc(protein.specimen)} protein ${esc(protein.module)}; weighted Jaccard ${value.toFixed(4)}">${value.toFixed(3)}${marker}</a></td>`}).join('')}</tr>`).join('');
   document.getElementById('heatmap').innerHTML=rows.length?`<table class="heatmap"><thead><tr><th class="row-label">Cell type · RNA module</th>${header}</tr></thead><tbody>${body}</tbody></table>`:'<div class="empty">No saved Jaccard results for this condition.</div>';
-  return {rowCount:rows.length,proteinCount:proteinModules.length,maxValue};
+  return {rowCount:rows.length,proteinCount:proteinColumns.length,maxValue,cellCount:transcriptGroups.length};
 }
 function renderRanking(pairs){
   const ranked=[...pairs].sort((a,b)=>(Number(b.weighted_jaccard)||0)-(Number(a.weighted_jaccard)||0)||a.cellType.localeCompare(b.cellType)||a.transcript_module.localeCompare(b.transcript_module)).slice(0,100);
-  document.getElementById('ranking').innerHTML=ranked.map((pair,index)=>{const status=pair.reciprocal_best?'Reciprocal best':pair.transcript_best?'RNA best':pair.proteomics_best?'Protein best':'—';return `<tr><td>${index+1}</td><td>${esc(pretty(pair.cellType))}</td><td>${esc(pair.transcript_module)}</td><td>${esc(pair.proteomics_module)}</td><td class="num">${Number(pair.weighted_jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.shared_genes||0).toLocaleString()}</td><td><span class="badge">${status}</span></td><td><a class="action" target="_top" href="${esc(deepLink(pair))}">Inspect</a></td></tr>`}).join('')||'<tr><td colspan="9" class="empty">No pairs</td></tr>';
+  document.getElementById('ranking').innerHTML=ranked.map((pair,index)=>{const status=pair.reciprocal_best?'Reciprocal best':pair.transcript_best?'RNA best':pair.proteomics_best?'Protein best':'—';return `<tr><td>${index+1}</td><td>${esc(pretty(pair.cellType))}</td><td>${esc(pair.transcript_module)}</td><td>${esc(pair.proteinSpecimen)}</td><td>${esc(pair.proteomics_module)}</td><td class="num">${Number(pair.weighted_jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.shared_genes||0).toLocaleString()}</td><td><span class="badge">${status}</span></td><td><a class="action" target="_top" href="${esc(deepLink(pair))}">Inspect</a></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">No pairs</td></tr>';
 }
 function downloadCsv(pairs){
-  const columns=['cell_type','transcript_module','proteomics_module','weighted_jaccard','plain_jaccard','shared_genes','transcript_module_genes','proteomics_module_genes','transcript_best','proteomics_best','reciprocal_best','record_id'];
+  const columns=['cell_type','transcript_module','protein_specimen','proteomics_module','weighted_jaccard','plain_jaccard','shared_genes','transcript_module_genes','proteomics_module_genes','transcript_best','proteomics_best','reciprocal_best','record_id'];
   const quote=value=>{const text=String(value??'');return /[",\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text};
-  const rows=pairs.map(pair=>[pair.cellType,pair.transcript_module,pair.proteomics_module,pair.weighted_jaccard,pair.jaccard,pair.shared_genes,pair.transcript_module_genes,pair.proteomics_module_genes,pair.transcript_best,pair.proteomics_best,pair.reciprocal_best,pair.recordId]);
-  const blob=new Blob(['\ufeff'+[columns,...rows].map(row=>row.map(quote).join(',')).join('\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`CSF_${state.threshold}_${state.strategy}_${state.removal}_kME_weighted_Jaccard.csv`;link.click();URL.revokeObjectURL(link.href);
+  const rows=pairs.map(pair=>[pair.cellType,pair.transcript_module,pair.proteinSpecimen,pair.proteomics_module,pair.weighted_jaccard,pair.jaccard,pair.shared_genes,pair.transcript_module_genes,pair.proteomics_module_genes,pair.transcript_best,pair.proteomics_best,pair.reciprocal_best,pair.recordId]);
+  const blob=new Blob(['\ufeff'+[columns,...rows].map(row=>row.map(quote).join(',')).join('\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`CSF_RNA_${state.proteinScope}_protein_${state.threshold}_${state.strategy}_${state.removal}_kME_weighted_Jaccard.csv`;link.click();URL.revokeObjectURL(link.href);
 }
 function render(){
   renderControls();const recordsNow=selectedRecords(),pairs=selectedPairs(),heatmap=renderHeatmap(pairs);renderRanking(pairs);
-  const threshold=thresholds.find(([value])=>value===state.threshold)?.[1],strategy=strategies.find(([value])=>value===state.strategy)?.[1],removal=removals.find(([value])=>value===state.removal)?.[1];
-  document.getElementById('summary').innerHTML=`<span>Specimen <b>CSF</b></span><span>Threshold <b>${threshold}</b></span><span>Features <b>${strategy}</b></span><span><b>${removal}</b></span><span>Cell types <b>${recordsNow.length}</b></span><span>RNA modules <b>${heatmap.rowCount}</b></span><span>Protein modules <b>${heatmap.proteinCount}</b></span><span>Module pairs <b>${pairs.length.toLocaleString()}</b></span>`;
+  const threshold=thresholds.find(([value])=>value===state.threshold)?.[1],strategy=strategies.find(([value])=>value===state.strategy)?.[1],removal=removals.find(([value])=>value===state.removal)?.[1],proteinScope=proteinScopes.find(([value])=>value===state.proteinScope)?.[1];
+  document.getElementById('matrixTitle').textContent=`All cell type–RNA modules × ${proteinScope} modules`;
+  document.getElementById('summary').innerHTML=`<span>RNA specimen <b>CSF</b></span><span>Protein network <b>${proteinScope}</b></span><span>Threshold <b>${threshold}</b></span><span>Features <b>${strategy}</b></span><span><b>${removal}</b></span><span>Cell types <b>${heatmap.cellCount}</b></span><span>RNA modules <b>${heatmap.rowCount}</b></span><span>Protein columns <b>${heatmap.proteinCount}</b></span><span>Module pairs <b>${pairs.length.toLocaleString()}</b></span>`;
   document.getElementById('downloadCsv').onclick=()=>downloadCsv(pairs);
 }
 render();
