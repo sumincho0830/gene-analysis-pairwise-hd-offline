@@ -1,5 +1,18 @@
 # Pipeline change log
 
+## 2026-11-24 - Restore post-preprocess outlier-removal comparison
+
+- Generated the standard ten descriptive/distribution outputs from each saved
+  `outlier_removal/03_preprocess/01_cut_diagnostic/matrix_before_cut.csv.gz`.
+- These matrices are the outputs of PyWGCNA `preprocess(cut=inf)` after removing
+  `Ng_MOG1` and `Ng_HD3`; no finite sample cut, imputation, or additional value
+  transform was introduced.
+- Added `Before Outlier Removal` and `After Outlier Removal` controls to the
+  `After Preprocess` stage while preserving the selected output type when the
+  user switches removal state.
+- Packaged complete post-preprocess heatmap, PCA, interactive PCA 3D, and PCA
+  score artifacts for 165 eligible transcriptomics networks.
+
 ## 2026-11-24 - Preserve Final Jaccard view during pair inspection
 
 - Changed embedded Final Jaccard heatmap cells and ranking links to open the

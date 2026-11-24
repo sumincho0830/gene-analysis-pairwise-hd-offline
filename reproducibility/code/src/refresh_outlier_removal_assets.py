@@ -57,6 +57,27 @@ ARTIFACT_SPECS = (
         "preprocess",
     ),
     (
+        "after_outlier_after_heatmap",
+        "After heatmap",
+        "outlier_removal/04_after_preprocess/02_data_distribution/heatmap.png",
+        "image",
+        "after preprocess after outlier removal",
+    ),
+    (
+        "after_outlier_after_pca",
+        "After PCA",
+        "outlier_removal/04_after_preprocess/02_data_distribution/pca_metadata.png",
+        "image",
+        "after preprocess after outlier removal",
+    ),
+    (
+        "after_outlier_after_pca_3d",
+        "After PCA 3D interactive",
+        "outlier_removal/04_after_preprocess/02_data_distribution/pca_3d_interactive.html",
+        "html",
+        "after preprocess after outlier removal",
+    ),
+    (
         "after_outlier_selected_cut",
         "Selected cut",
         "outlier_removal/03_preprocess/02_selected_cut/selected_cut_pending.html",
@@ -83,6 +104,12 @@ FILE_SPECS = (
         "After-outlier-removal PCA scores",
         "outlier_removal/02_before_preprocess/02_data_distribution/pca_scores.csv",
         "outlier removal QC",
+    ),
+    (
+        "after_outlier_after_pca_scores",
+        "After-outlier post-preprocess PCA scores",
+        "outlier_removal/04_after_preprocess/02_data_distribution/pca_scores.csv",
+        "after preprocess after outlier removal",
     ),
     (
         "after_outlier_cut_recommendation",
@@ -214,11 +241,17 @@ def refresh(
             if not source.is_file():
                 missing.append(f"{record['id']}::{relative}")
                 continue
+            target_name = Path(relative).name
+            # Both QC stages contain a pca_scores.csv. Preserve the existing
+            # before-preprocess path and give the post-preprocess table its own
+            # filename so one stage cannot overwrite the other.
+            if file_id == "after_outlier_after_pca_scores":
+                target_name = "after_outlier_after_pca_scores.csv"
             target = (
                 release_root
                 / "data/outlier_removal"
                 / record_hash
-                / Path(relative).name
+                / target_name
             )
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)

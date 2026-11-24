@@ -37,6 +37,7 @@ CODE_FILES = (
     "code/src/build_final_jaccard_bubble_figure.py",
     "code/src/final_jaccard_dashboard.html",
     "code/src/run_transcriptomics_outlier_removed_diagnostic.py",
+    "code/src/backfill_outlier_after_preprocess_qc.py",
     "code/src/run_transcriptomics_outlier_removed_find_modules.py",
     "code/src/run_transcriptomics_outlier_removed_module_diagnosis.py",
     "code/src/finalize_outlier_removal_no_cut.py",
@@ -48,6 +49,7 @@ CODE_FILES = (
     "code/tests/test_cross_omics_kme_weighted_jaccard.py",
     "code/tests/test_final_jaccard_bubble_figure.py",
     "code/tests/test_final_jaccard_navigation.py",
+    "code/tests/test_after_preprocess_outlier_navigation.py",
     "PIPELINE_SPEC.md",
     "CHANGELOG.md",
 )

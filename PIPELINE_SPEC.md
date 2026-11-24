@@ -11,8 +11,16 @@ has changed; those removals belong to preprocess, not outlier removal.
 
 The pre-removal variance-filtered results remain immutable. Each network gains
 an additive `outlier_removal/` branch containing sample-selection records, the
-ten before-preprocess QC outputs, `preprocess(cut=inf)` diagnostics, and an
-explicitly pending selected-cut gate.
+ten before-preprocess QC outputs, `preprocess(cut=inf)` diagnostics, an
+explicitly pending selected-cut gate, and ten post-preprocess QC outputs made
+from the saved `matrix_before_cut.csv.gz`.
+
+The post-preprocess QC branch is stored under
+`outlier_removal/04_after_preprocess/`. It preserves the matrix written by
+PyWGCNA after `TPMcutoff` and `goodSamplesGenes`; it does not apply a finite
+sample cut, imputation, a log transform, or another feature-ranking step. In the
+dashboard, `After Preprocess` therefore compares the same heatmap, PCA, or PCA
+3D output type before and after the two confirmed subject exclusions.
 
 The dendrogram line is the exact midpoint of the global largest difference
 between consecutive sample-linkage heights. This intentionally simple rule does

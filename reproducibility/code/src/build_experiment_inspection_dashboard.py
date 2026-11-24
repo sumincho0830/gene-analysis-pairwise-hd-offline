@@ -1044,6 +1044,9 @@ def build_variance_filtered_transcriptomics(
             ("after_heatmap", "After heatmap", "04_after_preprocess/02_data_distribution/heatmap.png", "after preprocess", "image"),
             ("after_pca", "After PCA", "04_after_preprocess/02_data_distribution/pca_metadata.png", "after preprocess", "image"),
             ("after_pca_3d", "After PCA 3D", "04_after_preprocess/02_data_distribution/pca_3d_interactive.html", "after preprocess", "html"),
+            ("after_outlier_after_heatmap", "After heatmap", "outlier_removal/04_after_preprocess/02_data_distribution/heatmap.png", "after preprocess after outlier removal", "image"),
+            ("after_outlier_after_pca", "After PCA", "outlier_removal/04_after_preprocess/02_data_distribution/pca_metadata.png", "after preprocess after outlier removal", "image"),
+            ("after_outlier_after_pca_3d", "After PCA 3D", "outlier_removal/04_after_preprocess/02_data_distribution/pca_3d_interactive.html", "after preprocess after outlier removal", "html"),
         ):
             existing_artifact(artifacts, network_root, dashboard_root, *spec)
         existing_artifact(
@@ -1083,6 +1086,7 @@ def build_variance_filtered_transcriptomics(
             ("outlier_removal_excluded_samples", "Confirmed excluded samples", "outlier_removal/01_sample_selection/excluded_samples.csv", "outlier removal"),
             ("outlier_removal_selection_summary", "Outlier-removal selection summary", "outlier_removal/01_sample_selection/selection_summary.json", "outlier removal"),
             ("after_outlier_pca_scores", "After-outlier-removal PCA scores", "outlier_removal/02_before_preprocess/02_data_distribution/pca_scores.csv", "outlier removal QC"),
+            ("after_outlier_after_pca_scores", "After-outlier post-preprocess PCA scores", "outlier_removal/04_after_preprocess/02_data_distribution/pca_scores.csv", "after preprocess after outlier removal"),
             ("after_outlier_cut_recommendation", "Largest-gap cut recommendation", "outlier_removal/03_preprocess/01_cut_diagnostic/cut_recommendation.json", "outlier removal preprocess"),
             ("after_outlier_cut_candidates", "All cut candidates", "outlier_removal/03_preprocess/01_cut_diagnostic/cut_candidates.csv", "outlier removal preprocess"),
             ("after_outlier_preprocess_summary", "cut=inf preprocess summary", "outlier_removal/03_preprocess/01_cut_diagnostic/preprocess_summary.json", "outlier removal preprocess"),
@@ -2237,7 +2241,7 @@ document.addEventListener('click',e=>{const moduleButton=e.target.closest('[data
 const artifactStageDefinitions=[
   {id:'before',label:'Before Preprocess',artifacts:['feature_selection','before_heatmap','before_pca','before_pca_3d','after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d']},
   {id:'preprocess',label:'Preprocess',artifacts:['cut_diagnostic','selected_cut','after_outlier_cut_diagnostic']},
-  {id:'after',label:'After Preprocess',artifacts:['after_heatmap','after_pca','after_pca_3d']},
+  {id:'after',label:'After Preprocess',artifacts:['after_heatmap','after_pca','after_pca_3d','after_outlier_after_heatmap','after_outlier_after_pca','after_outlier_after_pca_3d']},
   {id:'modules',label:'Find Modules',artifacts:['soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes']},
   {id:'downstream',label:'Downstream',artifacts:['diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity']},
   {id:'other',label:'Other',artifacts:[]},
@@ -2246,8 +2250,8 @@ const artifactStageById=new Map(artifactStageDefinitions.flatMap(stage=>stage.ar
 const artifactStageState={};
 const artifactRemovalState={};
 const artifactRemovalDefinitions=[
-  {id:'before',label:'Before Outlier Removal',artifacts:['feature_selection','before_heatmap','before_pca','before_pca_3d','cut_diagnostic','selected_cut','soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity']},
-  {id:'after',label:'After Outlier Removal',artifacts:['after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d','after_outlier_cut_diagnostic','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity']},
+  {id:'before',label:'Before Outlier Removal',artifacts:['feature_selection','before_heatmap','before_pca','before_pca_3d','cut_diagnostic','selected_cut','after_heatmap','after_pca','after_pca_3d','soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity']},
+  {id:'after',label:'After Outlier Removal',artifacts:['after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d','after_outlier_cut_diagnostic','after_outlier_after_heatmap','after_outlier_after_pca','after_outlier_after_pca_3d','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity']},
 ];
 const artifactRemovalById=new Map(artifactRemovalDefinitions.flatMap(group=>group.artifacts.map(id=>[id,group.id])));
 function artifactStageOf(id){return artifactStageById.get(id)||'other'}

@@ -451,6 +451,93 @@ def run_diagnostic(
     ]
 
 
+def write_after_preprocess_qc(
+    config: PipelineConfig,
+    network: Network,
+    strategy: str,
+    clinical: pd.DataFrame,
+    cohort_map: dict[str, str],
+    *,
+    resume: bool,
+) -> list[Path]:
+    """Create QC outputs from the saved post-preprocess, pre-cut matrix.
+
+    The confirmed-outlier branch intentionally applies no finite dendrogram
+    cut.  Therefore ``matrix_before_cut.csv.gz`` is also the approved matrix
+    immediately after PyWGCNA ``preprocess(cut=inf)`` and is the correct input
+    for the After Preprocess comparison.
+    """
+
+    branch_root = network.output_root / "outlier_removal"
+    matrix_path = (
+        branch_root
+        / "03_preprocess/01_cut_diagnostic/matrix_before_cut.csv.gz"
+    )
+    if not matrix_path.is_file():
+        return []
+    output_root = branch_root / "04_after_preprocess"
+    expected = [
+        output_root / "01_descriptive_statistics/data_summary.csv",
+        output_root / "01_descriptive_statistics/intensity_distribution.png",
+        output_root / "01_descriptive_statistics/sample_statistics.csv",
+        output_root / "01_descriptive_statistics/gene_statistics.csv",
+        output_root / "01_descriptive_statistics/outlier_candidates.csv",
+        output_root / "02_data_distribution/heatmap.png",
+        output_root / "02_data_distribution/pca_metadata.png",
+        output_root / "02_data_distribution/pca_3d.png",
+        output_root / "02_data_distribution/pca_3d_interactive.html",
+        output_root / "02_data_distribution/pca_scores.csv",
+    ]
+    manifest_path = output_root / "run_manifest.json"
+    if resume and all(path.is_file() for path in expected) and manifest_path.is_file():
+        return [*expected, manifest_path]
+
+    matrix = read_expression_matrix(matrix_path)
+    metadata = network_metadata(network, matrix, clinical, cohort_map)
+    qc = write_qc_outputs(
+        matrix,
+        metadata,
+        output_root,
+        title=(
+            "After PyWGCNA preprocess and Ng_MOG1/Ng_HD3 removal: "
+            f"{network.network_id} / {strategy}"
+        ),
+        include_plotlyjs="cdn",
+    )
+    write_run_manifest(
+        manifest_path,
+        pipeline_name="transcriptomics_after_outlier_after_preprocess_qc",
+        run_root=config.run_root,
+        parameters={
+            "threshold": network.threshold,
+            "strategy": strategy,
+            "mode": network.mode,
+            "specimen": network.specimen,
+            "cell_type": network.cell_type,
+            "excluded_subjects": list(EXCLUDED_SUBJECTS),
+            "preprocess_cut": "inf",
+        },
+        generation_rules={
+            "input": "saved matrix_before_cut from PyWGCNA preprocess(cut=inf)",
+            "finite_sample_cut": "not applied",
+            "expression_transform": "none",
+            "imputation": "none",
+            "qc_rule": "same transcriptomics descriptive/distribution generator as the before-preprocess branch",
+        },
+        input_paths=[matrix_path, config.clinical_path],
+        output_paths=list(qc.paths),
+        code_paths=[Path(__file__), Path(__file__).parent / "transcriptomics_qc.py"],
+        packages=(
+            "numpy",
+            "pandas",
+            "matplotlib",
+            "scikit-learn",
+            "plotly",
+        ),
+    )
+    return [*qc.paths, manifest_path]
+
+
 def run(
     config: PipelineConfig,
     *,
@@ -479,6 +566,14 @@ def run(
         branch_root = network.output_root / "outlier_removal"
         completion_path = branch_root / "03_preprocess/01_cut_diagnostic/preprocess_summary.json"
         if resume and completion_path.exists():
+            after_preprocess_paths = write_after_preprocess_qc(
+                config,
+                network,
+                strategy,
+                clinical,
+                cohort_map,
+                resume=True,
+            )
             summary = json.loads(completion_path.read_text(encoding="utf-8"))
             selection_summary_path = branch_root / "01_sample_selection/selection_summary.json"
             selection = (
@@ -500,6 +595,9 @@ def run(
                     "rows_after_removal": selection.get("rows_after_removal"),
                     "largest_gap_suggested_cut": summary.get("largest_gap_suggested_cut"),
                     "downstream_input_status": summary.get("downstream_input_status"),
+                    "after_preprocess_qc": (
+                        "complete" if after_preprocess_paths else "missing_matrix"
+                    ),
                 }
             )
             continue
@@ -563,6 +661,14 @@ def run(
             retained_metadata,
             retained_matrix_path,
         )
+        after_preprocess_paths = write_after_preprocess_qc(
+            config,
+            network,
+            strategy,
+            clinical,
+            cohort_map,
+            resume=False,
+        )
         manifest_path = branch_root / "run_manifest.json"
         write_run_manifest(
             manifest_path,
@@ -598,6 +704,7 @@ def run(
                 selection_summary_path,
                 *qc.paths,
                 *preprocess_paths,
+                *after_preprocess_paths,
             ],
             code_paths=[
                 Path(__file__),
@@ -631,6 +738,9 @@ def run(
                 ),
                 "downstream_input_status": preprocess_summary.get(
                     "downstream_input_status"
+                ),
+                "after_preprocess_qc": (
+                    "complete" if after_preprocess_paths else "missing_matrix"
                 ),
             }
         )

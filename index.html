@@ -1134,7 +1134,7 @@ document.addEventListener('click',e=>{const moduleButton=e.target.closest('[data
 const artifactStageDefinitions=[
   {id:'before',label:'Before Preprocess',artifacts:['feature_selection','before_heatmap','before_pca','before_pca_3d','after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d']},
   {id:'preprocess',label:'Preprocess',artifacts:['cut_diagnostic','selected_cut','after_outlier_cut_diagnostic']},
-  {id:'after',label:'After Preprocess',artifacts:['after_heatmap','after_pca','after_pca_3d']},
+  {id:'after',label:'After Preprocess',artifacts:['after_heatmap','after_pca','after_pca_3d','after_outlier_after_heatmap','after_outlier_after_pca','after_outlier_after_pca_3d']},
   {id:'modules',label:'Find Modules',artifacts:['soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes']},
   {id:'downstream',label:'Downstream',artifacts:['diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity']},
   {id:'other',label:'Other',artifacts:[]},
@@ -1143,8 +1143,8 @@ const artifactStageById=new Map(artifactStageDefinitions.flatMap(stage=>stage.ar
 const artifactStageState={};
 const artifactRemovalState={};
 const artifactRemovalDefinitions=[
-  {id:'before',label:'Before Outlier Removal',artifacts:['feature_selection','before_heatmap','before_pca','before_pca_3d','cut_diagnostic','selected_cut','soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity']},
-  {id:'after',label:'After Outlier Removal',artifacts:['after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d','after_outlier_cut_diagnostic','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity']},
+  {id:'before',label:'Before Outlier Removal',artifacts:['feature_selection','before_heatmap','before_pca','before_pca_3d','cut_diagnostic','selected_cut','after_heatmap','after_pca','after_pca_3d','soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity']},
+  {id:'after',label:'After Outlier Removal',artifacts:['after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d','after_outlier_cut_diagnostic','after_outlier_after_heatmap','after_outlier_after_pca','after_outlier_after_pca_3d','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity']},
 ];
 const artifactRemovalById=new Map(artifactRemovalDefinitions.flatMap(group=>group.artifacts.map(id=>[id,group.id])));
 function artifactStageOf(id){return artifactStageById.get(id)||'other'}
