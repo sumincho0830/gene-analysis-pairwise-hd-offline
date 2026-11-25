@@ -11,16 +11,8 @@ has changed; those removals belong to preprocess, not outlier removal.
 
 The pre-removal variance-filtered results remain immutable. Each network gains
 an additive `outlier_removal/` branch containing sample-selection records, the
-ten before-preprocess QC outputs, `preprocess(cut=inf)` diagnostics, an
-explicitly pending selected-cut gate, and ten post-preprocess QC outputs made
-from the saved `matrix_before_cut.csv.gz`.
-
-The post-preprocess QC branch is stored under
-`outlier_removal/04_after_preprocess/`. It preserves the matrix written by
-PyWGCNA after `TPMcutoff` and `goodSamplesGenes`; it does not apply a finite
-sample cut, imputation, a log transform, or another feature-ranking step. In the
-dashboard, `After Preprocess` therefore compares the same heatmap, PCA, or PCA
-3D output type before and after the two confirmed subject exclusions.
+ten before-preprocess QC outputs, `preprocess(cut=inf)` diagnostics, and an
+explicitly pending selected-cut gate.
 
 The dendrogram line is the exact midpoint of the global largest difference
 between consecutive sample-linkage heights. This intentionally simple rule does
@@ -803,21 +795,6 @@ Inspection dashboard에는 proteomics 8개 condition을 새 source로 추가하�
 
 ## 16. Transcriptomics-proteomics kME-weighted Jaccard
 
-Jaccard 결과의 분석 대상 cell type에서는 `other`를 제외한다. 이 제외는
-`cross_omics_similarity`, `after_outlier_cross_omics_similarity`와 interactive
-RNA-protein module comparison index에만 적용한다. `other`의 upstream QC record와
-비-Jaccard 산출물은 provenance 보존을 위해 삭제하지 않는다.
-
-최종 비교 화면은 CSF의 `cell_separate` network만 대상으로 한다. 조건 축은
-`threshold_5_cells`/`threshold_10_cells`, `01_cpm_detection`/
-`02_hvg_top9000`/`03_hvg_top5000`, before/after outlier removal의 2×3×2
-조합이다. 각 화면에서 행은 `cell type · transcriptomics module`, 열은 CSF
-proteomics module이며, cell 값은 각 원본 실험에 저장된 kME-weighted Jaccard를
-변경 없이 사용한다. 기본 화면은 threshold 5, HVG top 9,000, after outlier
-removal이다. `other`는 제외하며, cell을 선택하면 원래 network/module pair의
-유전자 세부 목록으로 이동한다. permutation p와 다중검정 q는 아직 산출하지
-않았으므로 이 화면의 순위는 descriptive evidence로만 해석한다.
-
 `experiments/05_cross_omics_module_similarity/`에서는 완료된 transcriptomics network마다 같은 specimen의 proteomics module 전체를 비교한다. CSF transcriptomics는 CSF proteomics와, PB transcriptomics는 PB proteomics와만 비교한다. 실험 간 기준이 달라지는 것을 막기 위해 proteomics reference는 동료 결과 재현 조건인 `04_ds3_mms30_med0p10`으로 고정한다.
 
 비교 가중치는 proper final module에 배정된 feature의 `absolute official assigned own-module kME`이다. raw dynamic label 0에서 유래한 fully-unassigned group은 양쪽 모두 제외한다. transcript module A와 proteomics module B의 similarity는 다음 fuzzy weighted Jaccard로 계산한다.
@@ -931,12 +908,23 @@ Variance-filtered transcriptomics의 민감도 분석에서는 공통적으로 �
 
 각 network의 결과는 각각 `outlier_removal/05_find_modules/01_default_ds2_mms50_med0p20/`와 `outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/`에 저장한다. cross-omics 결과는 `experiments/05_cross_omics_module_similarity/after_outlier_removal/`에 저장해 기존 결과를 덮어쓰지 않는다. Dashboard에서는 Before/After Outlier Removal을 같은 stage 안에서 전환하되, After Outlier Removal의 Preprocess에는 `Cut diagnostic`만 표시하고 `Selected cut`은 표시하지 않는다.
 
-## 22. Proteomics raw–batch-corrected QC comparison
+## 22. Transcriptomics batch-correction versioning
 
-Dashboard의 `Proteomics raw vs batch-corrected QC` source는 새 통계값을 계산하지 않고 기존에 저장된 QC 산출물을 동일 schema로 연결한다. 비교 범위는 `ALL`, `CSF`, `PB`이며 각 범위에서 `Raw`와 `Batch corrected`를 두 condition panel로 나란히 표시한다.
+새로 전달받은 보정 CSV는 기존 보정값에 다시 ComBat을 적용한 순차적 2차 보정이 아니다. 동일한 upstream CPM 행렬에서 design matrix만 바꾸어 다시 적합한 대체 보정본이다. 따라서 다음 세 버전을 서로 덮어쓰지 않고 병렬 비교한다.
 
-공통 visual tab은 heatmap, PCA metadata, 정적 PCA 3D, interactive PCA 3D다. descriptive intensity distribution은 해당 scope에 저장된 경우에만 표시한다. PCA scores, data summary, sample/protein statistics, outlier candidates와 run manifest도 실제로 존재하는 scope에서 download file로 연결한다.
+1. `uncorrected_cpm`: 전달받은 CPM workbook의 저장값
+2. `combat_v1_cell_diagnosis`: cell type과 diagnosis를 보존한 기존 ComBat 결과
+3. `combat_v2_cell_diagnosis_tissue`: cell type, diagnosis, tissue/specimen을 보존한 새 ComBat 결과
 
-연결된 PCA는 저장된 분석 규칙을 그대로 유지한다. feature에 하나라도 결측값이 있으면 해당 analysis subset의 PCA에서 feature 전체를 제외하고, nonconstant complete-case feature 전체를 사용하며, imputation이나 top-N feature selection을 하지 않는다. 값 변환은 추가로 적용하지 않고 mean centering만 사용한다. Heatmap 역시 저장된 입력값을 그대로 사용하며 dashboard builder는 figure의 값을 다시 계산하지 않는다.
+새 보정본의 재현 실행 루트는 `runs/combat_v2_cell_diagnosis_tissue/`이다. 입력 보정 CSV는 연구팀이 제공한 결과이므로 이 저장소에서 ComBat 자체를 다시 적합했다고 기록하지 않는다. 대신 받은 파일의 위치, 보존 변수, downstream 파라미터와 산출물 경로를 `RUN_CONFIG.md`와 각 단계 manifest에 기록한다.
 
-Raw와 batch-corrected record는 각각의 저장된 sample set과 feature 수를 화면에 따로 표시한다. 두 record의 sample 수가 다를 수 있으므로 이 화면은 동일 sample의 paired 변화량 계산이 아니라 각 저장 run의 분포·구조를 병렬로 inspection하는 용도다.
+Batch-correction QC는 동일한 `threshold × cell type × specimen` 범위에서 세 버전을 비교한다. heatmap과 PCA에는 저장된 expression 값을 그대로 사용하며 추가 log 변환, feature scaling, 결측치 대체, top-N feature 선택을 하지 않는다. PCA는 현재 분석 범위에서 결측값이 하나라도 있는 gene 전체와 zero-variance gene을 제외한 뒤 sklearn의 평균 중심화만 사용한다.
+
+`Before Preprocess`는 raw/uncorrected라는 뜻이 아니다. 각 correction version에 대해 PyWGCNA `preprocess()`를 호출하기 전의 행렬이라는 stage 의미를 유지한다. Dashboard 최상위 `Batch correction` 탭이 correction version을 선택하고, 그 아래 기존 Before Preprocess / Preprocess / After Preprocess / Find Modules / Downstream 구조를 유지한다.
+
+## 23. Final Jaccard의 보정 버전과 순열 검정
+
+- Final Heatmap의 행, 순위, CSV와 모듈 상세는 선택한 transcriptomics 보정 버전의 record ID를 공유한다. CSF cell-separate RNA에서 `other`를 제외하고 같은 단백질 참조 조건 `04_ds3_mms30_med0p10`의 CSF 및 PB 네트워크를 비교한다.
+- 메인 dashboard 인덱스를 만든 뒤 `build_final_jaccard_protein_scope.py`를 보정 버전별로 실행한다. v2에는 `--batch-correction combat_v2_cell_diagnosis_tissue`, v2의 `--run-root`, 공통 단백질 결과 루트인 `--proteomics-run-root`, 메인 `--dashboard-root`를 함께 지정한다. `build_cross_omics_view.py --dashboard-root`는 같은 대시보드에 diagnosis forest plot 데이터를 생성한다.
+- `build_final_jaccard_bubble_figure.py --batch-correction`은 CSF RNA × CSF protein, HVG 9,000, Ng_MOG1·Ng_HD3 제거 후의 5-cell과 10-cell 조건을 각각 검정한다. 공통 측정 유전자 집합 내 RNA 라벨을 모듈 배정과 kME 가중치의 짝을 유지하며 네트워크별로 10,000회 섞는다. 기본 seed는 0으로 고정하고, 정해진 cell type 및 threshold 순서에서 네트워크의 0-based 순번을 더한다. p는 `(b+1)/(B+1)`이며, BH-FDR은 보정 버전과 threshold 하나에 포함된 모든 모듈 쌍에 적용한다. q ≤ 0.25는 탐색적 후보 기준이다.
+- v2의 통계 원본, 후보 목록, 공유 gene 및 diagnosis 근거, PNG/PDF/SVG는 v2 루트의 `experiments/05_cross_omics_module_similarity/final_jaccard_permutation/`에 있다. 뷰어 경로는 `dashboard/figures/final_jaccard_bubble/combat_v2/`이다. 기존 v1 통계는 `--from-saved-statistics`로 뷰어 데이터를 생성할 수 있다. `build_full_dashboard_offline_release.py --final-jaccard-only`는 이 산출물과 overlap/diagnosis 데이터를 기존 오프라인 번들에 반영하고 checksum을 갱신한다.

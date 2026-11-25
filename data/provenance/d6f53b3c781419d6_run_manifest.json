@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "pipeline": "cross_omics_kme_weighted_jaccard",
+  "generated_at_utc": "2026-11-25T06:02:34.700831+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119\\runs\\combat_v2_cell_diagnosis_tissue",
+  "parameters": {
+    "proteomics_condition": "04_ds3_mms30_med0p10",
+    "specimen_matching": "CSF",
+    "gene_symbol_normalization": "trim and uppercase",
+    "proteomics_duplicate_probe_collapse": "highest signed kME across all proper modules",
+    "weight": "absolute own-module kME",
+    "global_figure_vmax": 0.3173121858724614
+  },
+  "generation_rules": {
+    "formula": "sum(min(abs own-module kME RNA, abs own-module kME protein)) / sum(max(weights))",
+    "module_outside_weight": 0,
+    "unassigned": "raw-label-0 groups excluded",
+    "universe": "intersection of genes measurable in both assays for this transcript experiment",
+    "interpretation": "descriptive fuzzy-membership overlap; not formal WGCNA module preservation or disease association"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/CSF/Macrophages/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 363645,
+      "sha256": "88fa31e1d97424de79fe91bc3589b0218788a6ae32d794522a236bb218d177e5"
+    },
+    {
+      "path": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119\\experiments\\01_batch_corrected\\proteomics\\06_kme_module_diagnosis\\CSF\\04_ds3_mms30_med0p10\\feature_module_kme.csv.gz",
+      "size_bytes": 1051243,
+      "sha256": "ef89ba04cd8bac2781ae874e4af88d209f43fdcaf412456adce7b95147345257"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/00_shared/proteomics_gene_collapse/CSF_representative_gene_modules.csv.gz",
+      "size_bytes": 140705,
+      "sha256": "ce463516c7fc934ab4531cccbfaf87588bfc99c4150da2528de1cb3898427411"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/CSF/Macrophages/module_pair_similarity.csv",
+      "size_bytes": 13616,
+      "sha256": "65b54a54504a55f454cf695a4e1b9bb5017a9d65352ced05c4034adddb5fba7d"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/CSF/Macrophages/transcript_module_best_matches.csv",
+      "size_bytes": 1071,
+      "sha256": "d54cf11f08c84d9c9490c765a64ad69cf8ae6f771a2961821cb866a50ad1abdd"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/CSF/Macrophages/all_pair_gene_contributions.csv.gz",
+      "size_bytes": 28426,
+      "sha256": "a87ae17e5accd79df0492d5df3d6d614f18d5996ff8ed054a0fb94785761b657"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/CSF/Macrophages/reciprocal_best_gene_contributions.csv.gz",
+      "size_bytes": 4263,
+      "sha256": "8da4a5711b6bc1a1d260c3896a2a44fd10f1d71d9a2fde6c6d05b62c57f587f7"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/CSF/Macrophages/gene_mapping_audit.json",
+      "size_bytes": 564,
+      "sha256": "55050309a265759ce535b516ea621e2e376da29ad9ea7d97d95233d16c71718c"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/CSF/Macrophages/kme_weighted_jaccard_heatmap.png",
+      "size_bytes": 198952,
+      "sha256": "33d62bf293f0d94094db42ff5639900b216a40e1fe9d8b0b21f57837adf29059"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/03_hvg_top5000/cell_separate/CSF/Macrophages/analysis_summary.json",
+      "size_bytes": 1349,
+      "sha256": "aec333fddb64bebef33892ae29059c0c041a83286797b5a4aaa4f9ada35c0f4b"
+    }
+  ],
+  "code": [
+    {
+      "path": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119\\code\\src\\run_cross_omics_kme_weighted_jaccard.py",
+      "size_bytes": 31322,
+      "sha256": "21d36ca8e9c8ad4405c6efc822fe2a62006b15a4d1795ccb446b0d6abc6f8417"
+    },
+    {
+      "path": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119\\code\\src\\pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "seaborn": "0.13.2"
+    }
+  }
+}

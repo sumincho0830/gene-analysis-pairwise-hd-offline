@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 import unittest
 
@@ -32,12 +33,19 @@ class FinalJaccardProteinScopeTests(unittest.TestCase):
             for record_id, entry in self.overlap.items()
             if record_id.endswith("::protein_PB")
         }
-        self.assertEqual(len(records), 138)
+        self.assertEqual(
+            Counter(entry["batch_correction"] for entry in records.values()),
+            {"combat_v1_cell_diagnosis": 138, "combat_v2_cell_diagnosis_tissue": 137},
+        )
         for record_id, entry in records.items():
             self.assertEqual(entry["specimen"], "CSF")
             self.assertEqual(entry["protein_specimen"], "PB")
             self.assertNotEqual(entry["cell_type"].lower(), "other")
             self.assertIn(entry["transcript_record_id"], self.members)
+            self.assertEqual(
+                "::combat_v2_cell_diagnosis_tissue::" in entry["transcript_record_id"],
+                entry["batch_correction"] == "combat_v2_cell_diagnosis_tissue",
+            )
             self.assertTrue((ROOT / entry["path"]).is_file(), record_id)
             self.assertTrue(entry["pairs"], record_id)
 
@@ -56,6 +64,26 @@ class FinalJaccardProteinScopeTests(unittest.TestCase):
         ]
         self.assertTrue(csf)
         self.assertTrue(all(entry.get("protein_specimen") == "CSF" for entry in csf))
+
+    def test_permutation_results_point_to_matching_version_and_diagnosis(self) -> None:
+        diagnosis = read_assignment(ROOT / "module-members/cross-omics-view.js")["diagnosis"]
+        for folder, version in (("", "v1"), ("combat_v2", "v2")):
+            lines = (ROOT / "figures/final_jaccard_bubble" / folder / "viewer-statistics.js").read_text(
+                encoding="utf-8"
+            ).splitlines()
+            by_threshold = json.loads(lines[-1].split("=", 1)[1].rstrip(";"))
+            for threshold, statistics in by_threshold.items():
+                keys = set()
+                for record_id, rna, protein, p, q in statistics["pairs"]:
+                    entry = self.overlap[record_id]
+                    self.assertTrue(entry["batch_correction"].startswith(f"combat_{version}_"))
+                    self.assertEqual(entry["threshold"], threshold)
+                    self.assertEqual(entry["protein_specimen"], "CSF")
+                    self.assertIn(rna, diagnosis[record_id])
+                    self.assertIn(protein, entry["proteomics_modules"])
+                    self.assertTrue(0 < p <= q <= 1)
+                    keys.add((record_id, rna, protein))
+                self.assertEqual(len(keys), statistics["module_pairs"])
 
 
 if __name__ == "__main__":

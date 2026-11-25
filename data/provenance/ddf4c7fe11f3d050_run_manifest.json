@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "pipeline": "cross_omics_kme_weighted_jaccard",
+  "generated_at_utc": "2026-11-25T06:03:14.935223+00:00",
+  "run_root": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119\\runs\\combat_v2_cell_diagnosis_tissue",
+  "parameters": {
+    "proteomics_condition": "04_ds3_mms30_med0p10",
+    "specimen_matching": "CSF",
+    "gene_symbol_normalization": "trim and uppercase",
+    "proteomics_duplicate_probe_collapse": "highest signed kME across all proper modules",
+    "weight": "absolute own-module kME",
+    "global_figure_vmax": 0.3173121858724614
+  },
+  "generation_rules": {
+    "formula": "sum(min(abs own-module kME RNA, abs own-module kME protein)) / sum(max(weights))",
+    "module_outside_weight": 0,
+    "unassigned": "raw-label-0 groups excluded",
+    "universe": "intersection of genes measurable in both assays for this transcript experiment",
+    "interpretation": "descriptive fuzzy-membership overlap; not formal WGCNA module preservation or disease association"
+  },
+  "inputs": [
+    {
+      "path": "experiments/04_variance_filtered/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/MAIT_gDT_cell/outlier_removal/06_kme_module_diagnosis/01_default_ds2_mms50_med0p20/feature_module_kme.csv.gz",
+      "size_bytes": 866364,
+      "sha256": "4c29dae22936806cb1668c3f89c77334d30b2f4bb48d5ba1e9a8509ad86f2e5e"
+    },
+    {
+      "path": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119\\experiments\\01_batch_corrected\\proteomics\\06_kme_module_diagnosis\\CSF\\04_ds3_mms30_med0p10\\feature_module_kme.csv.gz",
+      "size_bytes": 1051243,
+      "sha256": "ef89ba04cd8bac2781ae874e4af88d209f43fdcaf412456adce7b95147345257"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/00_shared/proteomics_gene_collapse/CSF_representative_gene_modules.csv.gz",
+      "size_bytes": 140705,
+      "sha256": "ce463516c7fc934ab4531cccbfaf87588bfc99c4150da2528de1cb3898427411"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/MAIT_gDT_cell/module_pair_similarity.csv",
+      "size_bytes": 18461,
+      "sha256": "49e6fa3765ab004c6838521440055f1503f9c0d8083908f66ae7e8312b66cb52"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/MAIT_gDT_cell/transcript_module_best_matches.csv",
+      "size_bytes": 1361,
+      "sha256": "47ea243e70706ae4f03e2cf1309a652dca7af1b7bb5583d89aca1b8b9e3beb67"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/MAIT_gDT_cell/all_pair_gene_contributions.csv.gz",
+      "size_bytes": 27253,
+      "sha256": "8d8230822ac048fc48c2eb6043a05cb987e466fa7c9f91147b6134dc1f8be07e"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/MAIT_gDT_cell/reciprocal_best_gene_contributions.csv.gz",
+      "size_bytes": 1575,
+      "sha256": "532a6743f0566e9c8354275b6c2d03c64fde75b62860efa839f0bdc6d542e41a"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/MAIT_gDT_cell/gene_mapping_audit.json",
+      "size_bytes": 565,
+      "sha256": "5c5b7cce7fa9d7b58987e61dd1e46c4b4185dcb5c081921061d36b42874b0248"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/MAIT_gDT_cell/kme_weighted_jaccard_heatmap.png",
+      "size_bytes": 205141,
+      "sha256": "ba8e73e62e5e06f9420943ada4462b74d704458b993c179a8cb88c0526ab48d5"
+    },
+    {
+      "path": "experiments/05_cross_omics_module_similarity/after_outlier_removal/transcriptomics/threshold_10_cells/01_cpm_detection/cell_separate/CSF/MAIT_gDT_cell/analysis_summary.json",
+      "size_bytes": 1376,
+      "sha256": "7d4258415673bda7f95f57e7daecd36b0a1d2a1bf838a2919fbe6d320d66ffdf"
+    }
+  ],
+  "code": [
+    {
+      "path": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119\\code\\src\\run_cross_omics_kme_weighted_jaccard.py",
+      "size_bytes": 31322,
+      "sha256": "21d36ca8e9c8ad4405c6efc822fe2a62006b15a4d1795ccb446b0d6abc6f8417"
+    },
+    {
+      "path": "C:\\Research\\ProjectCode\\gene-analysis\\results_20261119\\code\\src\\pipeline_provenance.py",
+      "size_bytes": 2562,
+      "sha256": "dd90f992d511a617e40ffe70763c45d4581cc8dcba66a006d0687465314533c4"
+    }
+  ],
+  "environment": {
+    "python": "3.11.13",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "seaborn": "0.13.2"
+    }
+  }
+}

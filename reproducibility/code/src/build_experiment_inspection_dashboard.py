@@ -898,6 +898,9 @@ def mirrored_image_artifact(
 def build_variance_filtered_transcriptomics(
     run_root: Path,
     dashboard_root: Path,
+    *,
+    correction_id: str,
+    correction_label: str,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     stage_root = run_root / "experiments/04_variance_filtered/transcriptomics"
     summary_path = stage_root / "find_modules_summary.csv"
@@ -1158,9 +1161,11 @@ def build_variance_filtered_transcriptomics(
         if diagnosis_q_values and min(diagnosis_q_values) < 0.05:
             flags.append({"level": "note", "code": "diagnosis_q_lt_005", "label": "At least one within-network diagnosis q < 0.05"})
 
-        record_id = "::".join(
+        record_parts = ["transcriptomics_variance"]
+        if correction_id != "combat_v1_cell_diagnosis":
+            record_parts.append(correction_id)
+        record_parts.extend(
             [
-                "transcriptomics_variance",
                 row["threshold"],
                 row["strategy"],
                 row["mode"],
@@ -1168,12 +1173,15 @@ def build_variance_filtered_transcriptomics(
                 row["cell_type"],
             ]
         )
+        record_id = "::".join(record_parts)
         records.append(
             {
                 "id": record_id,
                 "source_id": "transcriptomics_variance_findmodules",
-                "title": f"{row['cell_type']} · {row['specimen']}",
+                "title": f"{row['cell_type']} · {row['specimen']} · {correction_label}",
                 "dimensions": {
+                    "batch_correction": correction_id,
+                    "batch_correction_label": correction_label,
                     "threshold": row["threshold"],
                     "strategy": row["strategy"],
                     "mode": row["mode"],
@@ -1224,6 +1232,8 @@ def build_variance_filtered_transcriptomics(
                 "modules": modules,
                 "provenance": {
                     "network_id": row["network_id"],
+                    "batch_correction": correction_id,
+                    "batch_correction_label": correction_label,
                     "analysis_finished_at_utc": analysis.get("finished_at_utc"),
                     "feature_filtering_before_findModules": analysis.get("feature_filtering_before_findModules"),
                     "expression_transform_before_findModules": analysis.get("expression_transform_before_findModules"),
@@ -1248,9 +1258,95 @@ def build_variance_filtered_transcriptomics(
 
     source = {
         "id": "transcriptomics_variance_findmodules",
-        "label": "Transcriptomics variance-filter findModules",
+        "label": f"Transcriptomics variance-filter findModules · {correction_label}",
         "stage": "04_variance_filtered",
         "summary_path": dashboard_relative(summary_path, dashboard_root),
+        "record_count": len(records),
+    }
+    return source, records
+
+
+def build_transcriptomics_batch_correction_qc(
+    run_root: Path,
+    dashboard_root: Path,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Adapt the like-for-like CPM/ComBat QC comparison into dashboard records."""
+    comparison_root = run_root / "comparisons/transcriptomics_batch_correction"
+    manifest_path = comparison_root / "comparison_manifest.csv"
+    records: list[dict[str, Any]] = []
+    for row in read_csv_rows(manifest_path):
+        record_root = run_root / row["output_root"]
+        artifacts: list[dict[str, str]] = []
+        for spec in (
+            ("before_heatmap", "Heatmap", "heatmap.png", "batch correction QC", "image"),
+            ("before_pca", "PCA metadata", "pca_metadata.png", "batch correction QC", "image"),
+            ("before_pca_3d", "PCA 3D interactive", "pca_3d_interactive.html", "batch correction QC", "html"),
+        ):
+            existing_artifact(artifacts, record_root, dashboard_root, *spec)
+        files: list[dict[str, str]] = []
+        existing_file(
+            files,
+            record_root,
+            dashboard_root,
+            "pca_scores",
+            "PCA scores",
+            "pca_scores.csv",
+            "batch correction QC",
+        )
+        correction_id = row["batch_correction"]
+        correction_label = row["batch_correction_label"]
+        record_id = "::".join(
+            [
+                "transcriptomics_batch_qc",
+                correction_id,
+                row["threshold"],
+                row["specimen"],
+                row["cell_type"],
+            ]
+        )
+        records.append(
+            {
+                "id": record_id,
+                "source_id": "transcriptomics_batch_correction_qc",
+                "title": f"{row['cell_type']} · {row['specimen']} · {correction_label}",
+                "dimensions": {
+                    "batch_correction": correction_id,
+                    "batch_correction_label": correction_label,
+                    "threshold": row["threshold"],
+                    "strategy": "stored_values",
+                    "mode": "cell_separate",
+                    "specimen": row["specimen"],
+                    "cell_type": row["cell_type"],
+                    "condition": "stored_expression_qc",
+                },
+                "status": "complete_qc",
+                "metrics": {
+                    "samples": parse_number(row.get("samples")),
+                    "genes": parse_number(row.get("genes")),
+                    "pca_features": parse_number(
+                        row.get("pca_complete_nonconstant_genes")
+                    ),
+                },
+                "flags": [],
+                "artifacts": artifacts,
+                "files": files,
+                "modules": [],
+                "provenance": {
+                    "network_id": record_id,
+                    "batch_correction": correction_id,
+                    "batch_correction_label": correction_label,
+                    "expression_transform": "none; stored values",
+                    "missing_value_imputation": False,
+                    "feature_selection": "none",
+                    "pca": "complete-case nonconstant genes; mean centering only",
+                },
+            }
+        )
+    source = {
+        "id": "transcriptomics_batch_correction_qc",
+        "label": "Transcriptomics batch-correction QC",
+        "stage": "batch_correction_comparison",
+        "summary_path": dashboard_relative(manifest_path, dashboard_root),
         "record_count": len(records),
     }
     return source, records
@@ -2074,22 +2170,44 @@ def build_cross_omics_overlap_shards(
     }
 
 
-def build(run_root: Path) -> None:
+def build(run_root: Path, combat_v2_run_root: Path | None = None) -> None:
     dashboard_root = run_root / "dashboard"
     dashboard_root.mkdir(parents=True, exist_ok=True)
     generated_at = datetime.now(timezone.utc).isoformat()
 
     # Add future experiment families here as another adapter returning the same schema.
     transcriptomics_source, transcriptomics_records = build_variance_filtered_transcriptomics(
-        run_root, dashboard_root
+        run_root,
+        dashboard_root,
+        correction_id="combat_v1_cell_diagnosis",
+        correction_label="ComBat v1 (cell type + diagnosis)",
+    )
+    if combat_v2_run_root is not None:
+        _, v2_records = build_variance_filtered_transcriptomics(
+            combat_v2_run_root,
+            dashboard_root,
+            correction_id="combat_v2_cell_diagnosis_tissue",
+            correction_label="ComBat v2 (cell type + diagnosis + tissue)",
+        )
+        transcriptomics_records.extend(v2_records)
+    transcriptomics_source["label"] = "Transcriptomics variance-filter findModules"
+    transcriptomics_source["record_count"] = len(transcriptomics_records)
+    transcriptomics_qc_source, transcriptomics_qc_records = (
+        build_transcriptomics_batch_correction_qc(run_root, dashboard_root)
     )
     proteomics_qc_source, proteomics_qc_records = build_proteomics_batch_correction_qc(
         run_root, dashboard_root
     )
     proteomics_source, proteomics_records = build_proteomics_modules(run_root, dashboard_root)
-    sources = [transcriptomics_source, proteomics_qc_source, proteomics_source]
+    sources = [
+        transcriptomics_source,
+        transcriptomics_qc_source,
+        proteomics_qc_source,
+        proteomics_source,
+    ]
     records = [
         *transcriptomics_records,
+        *transcriptomics_qc_records,
         *proteomics_qc_records,
         *proteomics_records,
     ]
@@ -2295,6 +2413,12 @@ def parse_args() -> argparse.Namespace:
         "--run-root",
         type=Path,
         default=Path(__file__).resolve().parents[2],
+    )
+    parser.add_argument(
+        "--combat-v2-run-root",
+        type=Path,
+        default=None,
+        help="Optional updated ComBat run root to merge into the same dashboard.",
     )
     return parser.parse_args()
 
@@ -2729,10 +2853,17 @@ DASHBOARD_HTML = r'''<!doctype html>
 :root{--ink:#18212f;--muted:#667085;--line:#d9dee7;--panel:#f5f7fa;--accent:#0f6f78;--accent2:#dceff0;--warn:#a54b12;--danger:#9b2c2c;--ok:#276749;--white:#fff}
 *{box-sizing:border-box}body{margin:0;font:14px/1.45 Arial,Helvetica,sans-serif;color:var(--ink);background:var(--white)}button,select,input,textarea{font:inherit}button,select,input,textarea{border:1px solid var(--line);background:white;color:var(--ink);border-radius:3px}button{cursor:pointer}.top{padding:18px 24px 14px;border-bottom:1px solid var(--line)}h1{font-size:24px;margin:0 0 4px}.sub{color:var(--muted)}.kpis{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:1px;background:var(--line);border-bottom:1px solid var(--line)}.kpi{background:white;padding:12px 18px}.kpi b{display:block;font-size:21px}.kpi span{color:var(--muted);font-size:12px}.toolbar{position:sticky;top:0;z-index:10;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}.toolbar select,.toolbar input{padding:7px 8px;min-width:130px}.toolbar #search{min-width:230px}.toolbar button{padding:7px 10px}.spacer{flex:1}.layout{display:grid;grid-template-columns:360px minmax(0,1fr);min-height:calc(100vh - 210px)}.list{border-right:1px solid var(--line);height:calc(100vh - 210px);overflow:auto;background:#fbfcfd}.list-head{padding:10px 14px;color:var(--muted);border-bottom:1px solid var(--line);position:sticky;top:0;background:#fbfcfd}.record{width:100%;text-align:left;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:transparent;border-radius:0}.record:hover,.record.active{background:var(--accent2)}.record-title{font-weight:700}.record-meta,.record-metrics{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:4px}.pill{display:inline-block;padding:1px 6px;border:1px solid var(--line);border-radius:12px}.pill.warn{color:var(--warn);border-color:#e7b58f}.pill.ok{color:var(--ok)}.detail{padding:20px 24px 50px;min-width:0}.detail-head{display:flex;gap:20px;align-items:flex-start}.detail-head h2{margin:0 0 6px;font-size:22px}.detail-head .actions{margin-left:auto;display:flex;gap:8px}.detail-head button{padding:7px 10px}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:16px 0}.metric{background:white;padding:10px 12px}.metric .label{font-size:11px;color:var(--muted)}.metric .value{font-size:16px;font-weight:700}.flags{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}.flag{padding:4px 8px;background:#fff7ed;color:var(--warn);border:1px solid #fed7aa}.review{display:grid;grid-template-columns:minmax(310px,1fr) minmax(320px,1fr);gap:18px;padding:14px;background:var(--panel);border:1px solid var(--line);margin:14px 0}.decision-row{display:flex;gap:7px;margin:8px 0}.decision-row button{padding:7px 10px}.decision-row button.selected{background:var(--accent);color:white;border-color:var(--accent)}.checklist label{display:block;margin:5px 0}.review textarea{width:100%;min-height:88px;padding:8px;resize:vertical}.section-title{font-size:16px;margin:22px 0 8px}.artifact-tabs{display:flex;gap:6px;overflow:auto;padding-bottom:6px}.artifact-tabs button{padding:6px 9px;white-space:nowrap}.artifact-tabs button.active{background:var(--accent);color:white;border-color:var(--accent)}.viewer{border:1px solid var(--line);min-height:420px;background:white;display:flex;align-items:flex-start;justify-content:center;overflow:auto}.viewer img{display:block;max-width:100%;height:auto}.viewer iframe{width:100%;height:680px;border:0}.viewer .open{padding:18px}.lower{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:18px}.table-wrap{overflow:auto;border:1px solid var(--line);max-height:360px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{position:sticky;top:0;background:var(--panel)}.swatch{display:inline-block;width:11px;height:11px;border:1px solid #777;margin-right:6px;vertical-align:-1px}.files{border:1px solid var(--line);padding:10px 12px}.files details{border-bottom:1px solid var(--line);padding:7px 0}.files details:last-child{border-bottom:0}.files a{display:block;color:var(--accent);padding:3px 0;word-break:break-all}.compare{display:none;margin:0 16px 20px;border:1px solid var(--line);padding:14px}.compare.visible{display:block}.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.compare-card{border:1px solid var(--line);padding:10px}.compare-card img{width:100%;height:auto}.compare-card h3{font-size:14px;margin:0 0 7px}.empty{padding:50px;color:var(--muted);text-align:center}@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}.layout{grid-template-columns:1fr}.list{height:320px;border-right:0;border-bottom:1px solid var(--line)}.review,.lower{grid-template-columns:1fr}}
 </style>
+<style>
+.batch-tabs{display:flex;gap:8px;align-items:center;padding:12px 18px;background:white;border-bottom:1px solid var(--line);overflow:auto}
+.batch-tabs::before{content:'Batch correction';font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:4px;white-space:nowrap}
+.batch-tabs button{padding:8px 12px;white-space:nowrap}
+.batch-tabs button.active{background:var(--ink);color:white;border-color:var(--ink)}
+</style>
 </head>
 <body data-view="cell">
 <header class="top"><h1>Experiment inspection dashboard</h1><div class="sub" id="sourceLine"></div></header>
 <section class="kpis" id="kpis"></section>
+<nav class="batch-tabs" id="batchCorrectionTabs" aria-label="Batch correction version"></nav>
 <div class="toolbar">
   <select id="viewMode"><option value="cell">Cell type comparison</option><option value="outliers">Outlier candidates</option><option value="run">Individual run inspection</option></select><select id="source"><option value="">All sources</option></select><select id="cell"><option value="">Choose cell type</option></select><select class="run-only" id="threshold"><option value="">All thresholds</option></select><select class="run-only" id="strategy"><option value="">All strategies</option></select><select class="run-only" id="mode"><option value="">All modes</option></select><select class="run-only" id="specimen"><option value="">All specimens</option></select><select class="run-only" id="status"><option value="">All statuses</option></select><select class="run-only" id="decision"><option value="">All decisions</option><option value="unreviewed">Unreviewed</option><option value="use">Use</option><option value="hold">Hold</option><option value="reject">Do not use</option></select><select class="run-only" id="sort"><option value="default">Default order</option><option value="modules_desc">Final modules ↓</option><option value="unassigned_desc">Unassigned ↓</option><option value="runtime_desc">Runtime ↓</option></select><input class="run-only" id="search" placeholder="Search cell type or network"><span class="spacer"></span><button class="run-only" id="nextUnreviewed">Next unreviewed</button><button class="run-only" id="showCompare">Compare <span id="compareCount">0</span></button><button id="exportReview">Export review CSV</button><label><button type="button" id="importButton">Import review CSV</button><input id="importReview" type="file" accept=".csv" hidden></label>
 </div>
@@ -2744,6 +2875,13 @@ DASHBOARD_HTML = r'''<!doctype html>
 <script>
 const bundle=window.EXPERIMENT_DASHBOARD_DATA;const records=bundle.records;const storageKey=`experiment-review:${bundle.schema_version}:${bundle.run_root}`;let reviews=JSON.parse(localStorage.getItem(storageKey)||'{}');let selectedId=records[0]?.id||null;let artifactChoice={};let comparisonArtifactChoice=null;let comparisonHierarchyChoice={specimen:null,threshold:null};let compareIds=[];
 const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const fmt=(v,d=2)=>v===null||v===undefined||v===''?'—':typeof v==='number'?v.toLocaleString(undefined,{maximumFractionDigits:d}):esc(v);const stat=v=>v===null||v===undefined||v===''?'—':typeof v==='number'&&Math.abs(v)>0&&Math.abs(v)<0.0001?v.toExponential(2):fmt(v,4);const pct=v=>v===null||v===undefined?'—':`${(v*100).toFixed(1)}%`;
+const batchCorrectionLabels={uncorrected_cpm:'Uncorrected CPM',combat_v1_cell_diagnosis:'ComBat v1 · cell type + diagnosis',combat_v2_cell_diagnosis_tissue:'ComBat v2 · cell type + diagnosis + tissue'};
+const batchCorrectionOrder=['uncorrected_cpm','combat_v1_cell_diagnosis','combat_v2_cell_diagnosis_tissue'];
+let activeBatchCorrection='combat_v2_cell_diagnosis_tissue';
+function isTranscriptomicsRecord(record){return String(record?.source_id||'').startsWith('transcriptomics_')}
+function recordMatchesBatch(record){return !isTranscriptomicsRecord(record)||!activeBatchCorrection||record.dimensions.batch_correction===activeBatchCorrection}
+function availableBatchCorrections(){const source=$('source')?.value||'';if(!source.startsWith('transcriptomics_'))return [];return batchCorrectionOrder.filter(value=>records.some(record=>isTranscriptomicsRecord(record)&&record.dimensions.batch_correction===value))}
+function renderBatchCorrectionTabs(){const node=$('batchCorrectionTabs'),view=$('viewMode')?.value,values=availableBatchCorrections();node.hidden=view==='final_jaccard'||view==='outliers'||!values.length;if(node.hidden)return;if(!values.includes(activeBatchCorrection))activeBatchCorrection=values.includes('combat_v2_cell_diagnosis_tissue')?'combat_v2_cell_diagnosis_tissue':values[0]||'';node.innerHTML=values.map(value=>`<button type="button" data-batch-correction="${esc(value)}" class="${value===activeBatchCorrection?'active':''}">${esc(batchCorrectionLabels[value]||value)}</button>`).join('');document.querySelectorAll('[data-batch-correction]').forEach(button=>button.onclick=()=>{activeBatchCorrection=button.dataset.batchCorrection;const targetSource=activeBatchCorrection==='uncorrected_cpm'?'transcriptomics_batch_correction_qc':'transcriptomics_variance_findmodules';if([...$('source').options].some(option=>option.value===targetSource))$('source').value=targetSource;renderAll()})}
 const finalJaccardOption=document.createElement('option');finalJaccardOption.value='final_jaccard';finalJaccardOption.textContent='Final Jaccard Similarity Heatmap';$('viewMode').insertBefore(finalJaccardOption,$('viewMode').options[1]||null);
 const finalJaccardMain=document.createElement('main');finalJaccardMain.className='final-jaccard-only';finalJaccardMain.id='finalJaccardPage';finalJaccardMain.innerHTML='<iframe class="final-jaccard-page" src="final-jaccard.html" title="Final CSF cross-omics Jaccard comparison"></iframe>';document.getElementById('cellComparison').insertAdjacentElement('afterend',finalJaccardMain);
 const artifactOrder=['qc_heatmap','qc_pca_metadata','qc_pca_3d','qc_pca_3d_interactive','qc_intensity_distribution','feature_selection','before_heatmap','before_pca','before_pca_3d','after_outlier_heatmap','after_outlier_pca','after_outlier_pca_3d','cut_diagnostic','selected_cut','after_outlier_cut_diagnostic','after_heatmap','after_pca','after_pca_3d','soft_threshold','gene_dendrogram','me_dendrogram','module_sizes','after_outlier_soft_threshold','after_outlier_gene_dendrogram','after_outlier_me_dendrogram','after_outlier_module_sizes','diagnosis_pairwise_hd','diagnosis_heatmap','cross_omics_similarity','after_outlier_diagnosis_pairwise_hd','after_outlier_diagnosis_heatmap','after_outlier_cross_omics_similarity'];
@@ -2755,13 +2893,13 @@ fillSelect('source',bundle.sources.map(s=>s.id));fillSelect('threshold',unique(r
 $('viewMode').addEventListener('change',renderAll);
 const transcriptomicsSource=bundle.sources.find(s=>s.id.includes('transcriptomics'))?.id||bundle.sources[0]?.id||'';$('source').value=transcriptomicsSource;if([...$('cell').options].some(o=>o.value==='B_cell'))$('cell').value='B_cell';
 function ensureCellForSource(){const source=$('source').value,available=unique(r=>(!source||r.source_id===source)?r.dimensions.cell_type:null);if(!available.includes($('cell').value))$('cell').value=available.includes('B_cell')?'B_cell':available[0]||''}
-$('source').addEventListener('change',()=>{if($('viewMode').value==='cell'){ensureCellForSource();renderAll()}});
-function filtered(){const q=$('search').value.trim().toLowerCase();let out=records.filter(r=>(!$('source').value||r.source_id===$('source').value)&&(!$('threshold').value||r.dimensions.threshold===$('threshold').value)&&(!$('strategy').value||r.dimensions.strategy===$('strategy').value)&&(!$('mode').value||r.dimensions.mode===$('mode').value)&&(!$('specimen').value||r.dimensions.specimen===$('specimen').value)&&(!$('cell').value||r.dimensions.cell_type===$('cell').value)&&(!$('status').value||r.status===$('status').value)&&(!$('decision').value||reviewOf(r.id).decision===$('decision').value)&&(!q||`${r.title} ${r.provenance.network_id} ${r.dimensions.strategy}`.toLowerCase().includes(q)));const s=$('sort').value;if(s==='modules_desc')out.sort((a,b)=>(b.metrics.final_modules??-1)-(a.metrics.final_modules??-1));if(s==='unassigned_desc')out.sort((a,b)=>(b.metrics.unassigned_fraction??-1)-(a.metrics.unassigned_fraction??-1));if(s==='runtime_desc')out.sort((a,b)=>(b.metrics.runtime_seconds??-1)-(a.metrics.runtime_seconds??-1));return out}
+$('source').addEventListener('change',()=>{const values=availableBatchCorrections();if(!values.includes(activeBatchCorrection))activeBatchCorrection=values.includes('combat_v2_cell_diagnosis_tissue')?'combat_v2_cell_diagnosis_tissue':values[0]||activeBatchCorrection;if($('viewMode').value==='cell')ensureCellForSource();renderAll()});
+function filtered(){const q=$('search').value.trim().toLowerCase();let out=records.filter(r=>recordMatchesBatch(r)&&(!$('source').value||r.source_id===$('source').value)&&(!$('threshold').value||r.dimensions.threshold===$('threshold').value)&&(!$('strategy').value||r.dimensions.strategy===$('strategy').value)&&(!$('mode').value||r.dimensions.mode===$('mode').value)&&(!$('specimen').value||r.dimensions.specimen===$('specimen').value)&&(!$('cell').value||r.dimensions.cell_type===$('cell').value)&&(!$('status').value||r.status===$('status').value)&&(!$('decision').value||reviewOf(r.id).decision===$('decision').value)&&(!q||`${r.title} ${r.provenance.network_id} ${r.dimensions.strategy}`.toLowerCase().includes(q)));const s=$('sort').value;if(s==='modules_desc')out.sort((a,b)=>(b.metrics.final_modules??-1)-(a.metrics.final_modules??-1));if(s==='unassigned_desc')out.sort((a,b)=>(b.metrics.unassigned_fraction??-1)-(a.metrics.unassigned_fraction??-1));if(s==='runtime_desc')out.sort((a,b)=>(b.metrics.runtime_seconds??-1)-(a.metrics.runtime_seconds??-1));return out}
 function prettyDimension(v){return String(v??'—').replace(/^\d+_/,'').replaceAll('_',' ')}
 function prettyStrategy(v){return ({'00_raw':'Raw','01_batch_corrected':'Batch corrected','01_cpm_detection':'CPM detection','02_hvg_top9000':'HVG top 9,000','03_hvg_top5000':'HVG top 5,000'})[v]||prettyDimension(v)}
 function comparisonRows(){
   const source=$('source').value,cell=$('cell').value;
-  return records.filter(r=>(!source||r.source_id===source)&&cell&&r.dimensions.cell_type===cell).sort((a,b)=>{
+  return records.filter(r=>recordMatchesBatch(r)&&(!source||r.source_id===source)&&cell&&r.dimensions.cell_type===cell).sort((a,b)=>{
     const numberIn=v=>Number(String(v??'').match(/\d+/)?.[0]??999),specimenRank=v=>v==='CSF'?0:v==='PB'?1:2;
     const ka=[specimenRank(a.dimensions.specimen),numberIn(a.dimensions.threshold),numberIn(a.dimensions.strategy),String(a.dimensions.mode??''),String(a.provenance.condition??'')];
     const kb=[specimenRank(b.dimensions.specimen),numberIn(b.dimensions.threshold),numberIn(b.dimensions.strategy),String(b.dimensions.mode??''),String(b.provenance.condition??'')];
@@ -2827,7 +2965,7 @@ function renderList(){const rows=filtered();$('listCount').textContent=`${rows.l
 function metric(label,value){return `<div class="metric"><div class="label">${esc(label)}</div><div class="value">${value}</div></div>`}
 function renderDetail(){const r=records.find(x=>x.id===selectedId);if(!r){$('detail').innerHTML='<div class="empty">Select an experiment</div>';return}const rv=reviewOf(r.id),artifacts=r.artifacts;if(!artifactChoice[r.id]||!artifacts.some(a=>a.id===artifactChoice[r.id]))artifactChoice[r.id]=(artifacts.find(a=>a.id==='diagnosis_heatmap')||artifacts.find(a=>a.id==='me_dendrogram')||artifacts[0])?.id;const chosen=artifacts.find(a=>a.id===artifactChoice[r.id]);const metrics=[['Samples',fmt(r.metrics.samples)],['Genes',fmt(r.metrics.genes)],['Power',fmt(r.metrics.selected_power)],['Selected SFT R²',fmt(r.metrics.selected_power_sft_r2,3)],['Mean connectivity',fmt(r.metrics.selected_power_mean_connectivity,1)],['Dynamic modules',fmt(r.metrics.dynamic_modules)],['Final modules',fmt(r.metrics.final_modules)],['Unassigned',pct(r.metrics.unassigned_fraction)],['Largest module',pct(r.metrics.largest_module_fraction)],['Median |kME|',fmt(r.metrics.median_abs_kme,3)],['Diagnosis tests',fmt(r.metrics.diagnosis_tests)],['Min diagnosis q',stat(r.metrics.minimum_diagnosis_q)],['Samples cut',fmt(r.metrics.samples_removed_by_cut)],['Runtime (s)',fmt(r.metrics.runtime_seconds,1)]];const groups={};for(const f of r.files)(groups[f.category]??=[]).push(f);const proper=r.modules.filter(m=>!m.fully_unassigned).sort((a,b)=>(b.features??0)-(a.features??0));$('detail').innerHTML=`<div class="detail-head"><div><h2>${esc(r.title)}</h2><div class="sub">${esc(r.provenance.network_id)} · ${esc(r.status)}</div></div><div class="actions"><button id="addCompare">${compareIds.includes(r.id)?'Remove from compare':'Add to compare'}</button></div></div><div class="flags">${r.flags.map(f=>`<span class="flag">${esc(f.label)}</span>`).join('')}</div><div class="metric-grid">${metrics.map(x=>metric(...x)).join('')}</div><section class="review"><div><b>Decision</b><div class="decision-row">${[['use','Use'],['hold','Hold'],['reject','Do not use'],['unreviewed','Clear']].map(([v,l])=>`<button data-decision="${v}" class="${rv.decision===v?'selected':''}">${l}</button>`).join('')}</div><div class="checklist"><label><input type="checkbox" data-check="power" ${rv.checks.power?'checked':''}> Soft-threshold behavior inspected</label><label><input type="checkbox" data-check="modules" ${rv.checks.modules?'checked':''}> ME merging and module sizes inspected</label><label><input type="checkbox" data-check="outliers" ${rv.checks.outliers?'checked':''}> Sample/outlier evidence inspected</label><label><input type="checkbox" data-check="ready" ${rv.checks.ready?'checked':''}> Ready for downstream analysis</label></div></div><div><b>Review notes</b><textarea id="reviewNotes" placeholder="Why use, hold, or reject this run?">${esc(rv.notes)}</textarea><div class="sub">Saved in this browser · ${rv.updated_at?`updated ${esc(rv.updated_at)}`:'not reviewed yet'}</div></div></section><h3 class="section-title">Visual evidence</h3><div class="artifact-tabs">${artifacts.map(a=>`<button data-artifact="${a.id}" class="${a.id===chosen?.id?'active':''}">${esc(a.label)}</button>`).join('')}</div><div class="viewer">${!chosen?'<div class="empty">No visual artifact</div>':chosen.kind==='html'?`<div style="width:100%"><div class="open"><a href="${esc(chosen.path)}" target="_blank">Open interactive result in a new tab</a></div><iframe src="${esc(chosen.path)}"></iframe></div>`:`<a href="${esc(chosen.path)}" target="_blank"><img src="${esc(chosen.path)}" alt="${esc(chosen.label)}"></a>`}</div><div class="lower"><div><h3 class="section-title">Final proper modules</h3><div class="table-wrap"><table><thead><tr><th>Module</th><th>Features</th><th>Median |kME|</th></tr></thead><tbody>${proper.map(m=>`<tr><td><span class="swatch" style="background:${esc(m.color)}"></span>${esc(m.color)}</td><td>${fmt(m.features)}</td><td>${fmt(m.median_abs_kme,3)}</td></tr>`).join('')}</tbody></table></div></div><div><h3 class="section-title">Files and provenance</h3><div class="files">${Object.entries(groups).map(([g,fs])=>`<details ${g==='summary'?'open':''}><summary>${esc(g)} (${fs.length})</summary>${fs.map(f=>`<a href="${esc(f.path)}" target="_blank">${esc(f.label)}</a>`).join('')}</details>`).join('')}<details><summary>Parameters</summary>${Object.entries(r.provenance).map(([k,v])=>`<div><b>${esc(k)}</b>: ${fmt(v)}</div>`).join('')}</details></div></div></div>`;document.querySelectorAll('[data-decision]').forEach(n=>n.onclick=()=>saveReview(r.id,{decision:n.dataset.decision}));document.querySelectorAll('[data-check]').forEach(n=>n.onchange=()=>saveReview(r.id,{checks:{...reviewOf(r.id).checks,[n.dataset.check]:n.checked}}));$('reviewNotes').onchange=e=>saveReview(r.id,{notes:e.target.value});document.querySelectorAll('[data-artifact]').forEach(n=>n.onclick=()=>{artifactChoice[r.id]=n.dataset.artifact;renderDetail()});$('addCompare').onclick=()=>{compareIds=compareIds.includes(r.id)?compareIds.filter(x=>x!==r.id):[...compareIds,r.id].slice(-4);renderAll()}}
 function renderCompare(){const panel=$('comparePanel');$('compareCount').textContent=compareIds.length;if(!compareIds.length){panel.classList.remove('visible');$('compareGrid').innerHTML='';return}const selected=compareIds.map(id=>records.find(r=>r.id===id)).filter(Boolean);$('compareGrid').innerHTML=selected.map(r=>{const a=r.artifacts.find(x=>x.id==='me_dendrogram')||r.artifacts[0];return `<div class="compare-card"><h3>${esc(r.title)}</h3><div class="sub">${esc(r.dimensions.strategy)} · dynamic ${fmt(r.metrics.dynamic_modules)} → final ${fmt(r.metrics.final_modules)}</div>${a?`<a href="${esc(a.path)}" target="_blank"><img src="${esc(a.path)}" alt="${esc(a.label)}"></a>`:''}</div>`}).join('')}
-function renderAll(){const view=$('viewMode').value;document.body.dataset.view=view;renderKpis();if(view==='cell'){renderCellComparison()}else if(view==='outliers'){window.OutlierReview?.render($('outlierReview'));window.OutlierReview?.renderKpis()}else if(view!=='final_jaccard'){renderList();renderDetail();renderCompare();window.OutlierReview?.attachRunShortcut(selectedId)}$('sourceLine').textContent=`Schema ${bundle.schema_version} · generated ${bundle.generated_at_utc} · ${bundle.sources.map(s=>s.label).join(', ')}`}
+function renderAll(){const view=$('viewMode').value;document.body.dataset.view=view;renderBatchCorrectionTabs();renderKpis();if(view==='cell'){renderCellComparison()}else if(view==='outliers'){window.OutlierReview?.render($('outlierReview'));window.OutlierReview?.renderKpis()}else if(view!=='final_jaccard'){renderList();renderDetail();renderCompare();window.OutlierReview?.attachRunShortcut(selectedId)}$('sourceLine').textContent=`Schema ${bundle.schema_version} · generated ${bundle.generated_at_utc} · ${bundle.sources.map(s=>s.label).join(', ')}`}
 window.renderAll=renderAll;
 window.openOutlierRecord=(recordId,artifactId)=>{selectedId=recordId;if(artifactId)artifactChoice[recordId]=artifactId;$('viewMode').value='run';renderAll()};
 $('showCompare').onclick=()=>{$('comparePanel').classList.toggle('visible');$('comparePanel').scrollIntoView({behavior:'smooth'})};$('clearCompare').onclick=()=>{compareIds=[];renderAll()};$('nextUnreviewed').onclick=()=>{const rows=filtered(),i=Math.max(-1,rows.findIndex(r=>r.id===selectedId));const next=[...rows.slice(i+1),...rows.slice(0,i+1)].find(r=>reviewOf(r.id).decision==='unreviewed');if(next){selectedId=next.id;renderAll()}};
@@ -2840,4 +2978,9 @@ function parseCSV(text){const rows=[];let row=[],cell='',quoted=false;for(let i=
 
 if __name__ == "__main__":
     arguments = parse_args()
-    build(arguments.run_root.resolve())
+    build(
+        arguments.run_root.resolve(),
+        arguments.combat_v2_run_root.resolve()
+        if arguments.combat_v2_run_root is not None
+        else None,
+    )

@@ -193,7 +193,10 @@ def refresh(
     missing: list[str] = []
 
     for record in bundle["records"]:
-        if record.get("source_id") != "transcriptomics_variance_findmodules":
+        if record.get("source_id") not in {
+            "transcriptomics_variance_findmodules",
+            "transcriptomics",
+        }:
             continue
         # The removal-state tabs now carry the before/after meaning, so keep
         # the leaf artifact labels identical for direct visual comparison.

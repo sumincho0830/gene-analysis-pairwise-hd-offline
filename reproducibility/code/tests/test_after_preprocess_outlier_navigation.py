@@ -40,8 +40,10 @@ class AfterPreprocessOutlierNavigationTests(unittest.TestCase):
             record
             for record in data["records"]
             if record.get("source_id") == "transcriptomics_variance_findmodules"
+            and record.get("dimensions", {}).get("strategy")
+            in {"01_cpm_detection", "02_hvg_top9000", "03_hvg_top5000"}
         ]
-        packaged = 0
+        packaged_by_correction: dict[str, int] = {}
         for record in records:
             artifact_ids = {artifact["id"] for artifact in record.get("artifacts", [])}
             has_diagnostic = "after_outlier_cut_diagnostic" in artifact_ids
@@ -49,10 +51,16 @@ class AfterPreprocessOutlierNavigationTests(unittest.TestCase):
             if has_diagnostic:
                 self.assertTrue(has_post_qc, record["id"])
             if has_post_qc:
-                packaged += 1
+                correction = record["dimensions"]["batch_correction"]
+                packaged_by_correction[correction] = (
+                    packaged_by_correction.get(correction, 0) + 1
+                )
                 file_ids = {item["id"] for item in record.get("files", [])}
                 self.assertIn("after_outlier_after_pca_scores", file_ids, record["id"])
-        self.assertEqual(packaged, 165)
+        self.assertEqual(packaged_by_correction["combat_v1_cell_diagnosis"], 165)
+        self.assertEqual(
+            packaged_by_correction["combat_v2_cell_diagnosis_tissue"], 165
+        )
 
 
 if __name__ == "__main__":

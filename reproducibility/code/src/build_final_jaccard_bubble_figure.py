@@ -46,6 +46,11 @@ OUTPUT_DIR = ROOT / "figures" / "final_jaccard_bubble"
 STRATEGY = "02_hvg_top9000"
 PROTEOMICS_RECORD_ID = "proteomics::CSF::04_ds3_mms30_med0p10"
 THRESHOLDS = ("threshold_5_cells", "threshold_10_cells")
+CORRECTION_LABELS = {
+    "combat_v1_cell_diagnosis": "ComBat v1",
+    "combat_v2_cell_diagnosis_tissue": "ComBat v2",
+}
+DEFAULT_CORRECTION = "combat_v1_cell_diagnosis"
 CELL_ORDER = (
     "B_cell",
     "CD4_T_cell",
@@ -87,30 +92,35 @@ class NetworkFiles:
     diagnosis_table: Path | None
 
 
-def read_dashboard_records() -> list[dict[str, Any]]:
-    source = (ROOT / "dashboard-data.js").read_text(encoding="utf-8")
+def read_dashboard_records(dashboard_root: Path = ROOT) -> list[dict[str, Any]]:
+    source = (dashboard_root / "dashboard-data.js").read_text(encoding="utf-8")
     payload = source.split("=", 1)[1].strip().removesuffix(";")
     return json.loads(payload)["records"]
 
 
-def file_map(record: dict[str, Any]) -> dict[str, Path]:
-    return {item["id"]: ROOT / item["path"] for item in record.get("files", [])}
+def file_map(record: dict[str, Any], dashboard_root: Path = ROOT) -> dict[str, Path]:
+    return {item["id"]: dashboard_root / item["path"] for item in record.get("files", [])}
 
 
-def select_networks(records: list[dict[str, Any]]) -> list[NetworkFiles]:
+def select_networks(
+    records: list[dict[str, Any]],
+    batch_correction: str = DEFAULT_CORRECTION,
+    dashboard_root: Path = ROOT,
+) -> list[NetworkFiles]:
     selected: list[NetworkFiles] = []
     for record in records:
         dimensions = record.get("dimensions", {})
         cell_type = str(dimensions.get("cell_type", ""))
         if not (
             dimensions.get("threshold") in THRESHOLDS
+            and dimensions.get("batch_correction", DEFAULT_CORRECTION) == batch_correction
             and dimensions.get("strategy") == STRATEGY
             and dimensions.get("mode") == "cell_separate"
             and dimensions.get("specimen") == "CSF"
             and cell_type.lower() != "other"
         ):
             continue
-        files = file_map(record)
+        files = file_map(record, dashboard_root)
         required = (
             "after_outlier_official_kme",
             "after_outlier_cross_pair_similarity",
@@ -371,6 +381,7 @@ def plot_bubble(
     *,
     global_max_similarity: float,
     candidate_only: bool = False,
+    correction_label: str = "ComBat v1",
 ) -> None:
     working = table.copy()
     cell_order = [cell for cell in CELL_ORDER if cell in set(working["cell_type"])]
@@ -465,7 +476,7 @@ def plot_bubble(
     header.text(
         0.0,
         0.70,
-        f"{threshold_label} | HVG top 9,000 | Ng_MOG1 and Ng_HD3 removed | other excluded | "
+        f"{correction_label} | {threshold_label} | HVG top 9,000 | Ng_MOG1 and Ng_HD3 removed | other excluded | "
         f"{len(working):,} pair tests across {working['cell_type'].nunique()} cell types\n"
         "Dot area: |kME|-weighted Jaccard   |   Fill: permutation BH-FDR q (darker = smaller q)",
         ha="left",
@@ -632,15 +643,61 @@ def write_candidate_shared_genes(
     )
 
 
-def run(*, permutations: int, seed: int, output_dir: Path) -> None:
-    records = read_dashboard_records()
-    networks = select_networks(records)
-    if not networks:
-        raise RuntimeError("No matching after-outlier CSF HVG-9000 networks found")
+def bubble_stem(output_dir: Path, threshold: str) -> Path:
+    return output_dir / (
+        f"CSF_{threshold}_hvg_top9000_after_outlier_"
+        "kME_weighted_Jaccard_permutation_bubble"
+    )
+
+
+def write_viewer_statistics(output_dir: Path, batch_correction: str) -> None:
+    """Package saved p/q values for file:// use, keyed by overlap record and pair."""
+    thresholds = {}
+    for threshold in THRESHOLDS:
+        stem = bubble_stem(output_dir, threshold)
+        stats_path = stem.with_name(stem.name + "_statistics.csv.gz")
+        table = pd.read_csv(stats_path)
+        columns = [
+            "record_id", "transcript_module", "proteomics_module",
+            "permutation_p_value", "bh_fdr_q_within_figure",
+        ]
+        keys = columns[:3]
+        if table.empty or table.duplicated(keys).any():
+            raise ValueError(f"Empty or duplicate module pairs in {stats_path}")
+        is_v2 = table["record_id"].str.contains("::combat_v2_cell_diagnosis_tissue::", regex=False)
+        if not is_v2.eq(batch_correction == "combat_v2_cell_diagnosis_tissue").all():
+            raise ValueError(f"Unexpected batch correction in {stats_path}")
+        thresholds[threshold] = {
+            "module_pairs": len(table),
+            "q_le_0p25": int(table["bh_fdr_q_within_figure"].le(0.25).sum()),
+            "stem": stem.name,
+            "files": sorted(path.name for path in output_dir.glob(stem.name + "*")),
+            "pairs": [
+                [record_id + "::after_outlier", rna, protein, p, q]
+                for record_id, rna, protein, p, q in table[columns].itertuples(index=False, name=None)
+            ],
+        }
+    (output_dir / "viewer-statistics.js").write_text(
+        "window.FINAL_JACCARD_STATISTICS=window.FINAL_JACCARD_STATISTICS||{};\n"
+        f"window.FINAL_JACCARD_STATISTICS[{json.dumps(batch_correction)}]="
+        + json.dumps(thresholds, separators=(",", ":"), allow_nan=False)
+        + ";\n",
+        encoding="utf-8",
+    )
+
+
+def run(
+    *, permutations: int, seed: int, output_dir: Path,
+    batch_correction: str = DEFAULT_CORRECTION, dashboard_root: Path = ROOT,
+) -> None:
+    records = read_dashboard_records(dashboard_root)
+    networks = select_networks(records, batch_correction, dashboard_root)
+    if {network.threshold for network in networks} != set(THRESHOLDS):
+        raise RuntimeError(f"Missing after-outlier CSF HVG-9000 networks for {batch_correction}")
     proteomics_record = next(
         record for record in records if record["id"] == PROTEOMICS_RECORD_ID
     )
-    protein_files = file_map(proteomics_record)
+    protein_files = file_map(proteomics_record, dashboard_root)
     protein_source = pd.read_csv(protein_files["official_kme"])
     protein_collapsed, protein_universe, collapse_audit = collapse_proteomics_to_gene(
         protein_source
@@ -690,6 +747,7 @@ def run(*, permutations: int, seed: int, output_dir: Path) -> None:
     }
     summary: dict[str, Any] = {
         "analysis": "CSF cross-omics module overlap permutation test",
+        "batch_correction": batch_correction,
         "strategy": STRATEGY,
         "sample_exclusion": ["Ng_MOG1", "Ng_HD3"],
         "cell_type_exclusion": ["other"],
@@ -713,11 +771,7 @@ def run(*, permutations: int, seed: int, output_dir: Path) -> None:
 
     for threshold in THRESHOLDS:
         table = combined.loc[combined["threshold"].eq(threshold)].copy()
-        label = "5" if threshold == "threshold_5_cells" else "10"
-        stem = output_dir / (
-            f"CSF_threshold_{label}_cells_hvg_top9000_after_outlier_"
-            "kME_weighted_Jaccard_permutation_bubble"
-        )
+        stem = bubble_stem(output_dir, threshold)
         table.to_csv(
             stem.with_name(stem.name + "_statistics.csv.gz"),
             index=False,
@@ -734,12 +788,14 @@ def run(*, permutations: int, seed: int, output_dir: Path) -> None:
             stem,
             global_max_similarity=global_max,
             candidate_only=False,
+            correction_label=CORRECTION_LABELS[batch_correction],
         )
         plot_bubble(
             table,
             stem.with_name(stem.name + "_candidate_rows_q0p25"),
             global_max_similarity=global_max,
             candidate_only=True,
+            correction_label=CORRECTION_LABELS[batch_correction],
         )
         write_candidate_shared_genes(
             candidates,
@@ -770,6 +826,7 @@ def run(*, permutations: int, seed: int, output_dir: Path) -> None:
     (output_dir / "analysis_method_and_summary.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+    write_viewer_statistics(output_dir, batch_correction)
     print(json.dumps(summary["thresholds"], indent=2), flush=True)
 
 
@@ -778,9 +835,17 @@ if __name__ == "__main__":
     parser.add_argument("--permutations", type=int, default=10_000)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
+    parser.add_argument("--dashboard-root", type=Path, default=ROOT)
+    parser.add_argument("--batch-correction", choices=CORRECTION_LABELS, default=DEFAULT_CORRECTION)
+    parser.add_argument("--from-saved-statistics", action="store_true")
     args = parser.parse_args()
-    run(
-        permutations=args.permutations,
-        seed=args.seed,
-        output_dir=args.output_dir.resolve(),
-    )
+    if args.from_saved_statistics:
+        write_viewer_statistics(args.output_dir.resolve(), args.batch_correction)
+    else:
+        run(
+            permutations=args.permutations,
+            seed=args.seed,
+            output_dir=args.output_dir.resolve(),
+            batch_correction=args.batch_correction,
+            dashboard_root=args.dashboard_root.resolve(),
+        )

@@ -18,11 +18,10 @@ start index.html
 
 ## 포함된 범위
 
-- experiment records: 176
-- visual/interactive artifacts: 4565
-- downloadable CSV/JSON/provenance files: 10253
+- experiment records: 584
+- visual/interactive artifacts: 10707
+- downloadable CSV/JSON/provenance files: 20526
 - feature selection, before/after heatmap·PCA, interactive PCA 3D
-- proteomics raw vs batch-corrected heatmap·PCA comparison for ALL, CSF, and PB
 - sample-cut diagnostic, soft threshold, gene/ME dendrogram, module sizes
 - `Ng_MOG1`·`Ng_HD3` 제거 전/후 결과 비교; 제거 후 branch에는 finite sample cut 없음
 - module–diagnosis 및 RNA–protein module similarity

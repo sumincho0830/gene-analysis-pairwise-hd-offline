@@ -36,6 +36,8 @@ FINAL_THRESHOLDS = {"threshold_5_cells", "threshold_10_cells"}
 FINAL_STRATEGIES = {"01_cpm_detection", "02_hvg_top9000", "03_hvg_top5000"}
 TRANSCRIPT_SPECIMEN = "CSF"
 PROTEIN_SPECIMEN = "PB"
+COMBAT_V1 = "combat_v1_cell_diagnosis"
+COMBAT_V2 = "combat_v2_cell_diagnosis_tissue"
 PAIR_COLUMNS = [
     "transcript_module",
     "proteomics_module",
@@ -70,10 +72,12 @@ def _finite(value: Any) -> float | None:
     return number if np.isfinite(number) else None
 
 
-def _base_record_id(row: Any) -> str:
+def _base_record_id(row: Any, batch_correction: str = COMBAT_V1) -> str:
+    prefix = ["transcriptomics_variance"]
+    if batch_correction == COMBAT_V2:
+        prefix.append(batch_correction)
     return "::".join(
-        [
-            "transcriptomics_variance",
+        prefix + [
             str(row.threshold),
             str(row.strategy),
             str(row.mode),
@@ -157,11 +161,14 @@ def _annotate_existing_records(index: dict[str, Any]) -> None:
 
     for record_id, entry in index.get("records", {}).items():
         entry.setdefault("protein_specimen", entry.get("specimen"))
-        entry.setdefault("transcript_record_id", record_id)
-        parts = str(record_id).split("::")
+        base_record_id = record_id.removesuffix(f"::protein_{PROTEIN_SPECIMEN}")
+        entry.setdefault("transcript_record_id", base_record_id)
+        parts = base_record_id.split("::")
         after = "after_outlier" in parts
-        base = [part for part in parts if part != "after_outlier"]
+        correction = COMBAT_V2 if COMBAT_V2 in parts else COMBAT_V1
+        base = [part for part in parts if part not in {"after_outlier", COMBAT_V2}]
         if len(base) >= 6 and base[0] == "transcriptomics_variance":
+            entry.setdefault("batch_correction", correction)
             entry.setdefault("threshold", base[1])
             entry.setdefault("strategy", base[2])
             entry.setdefault("mode", base[3])
@@ -171,10 +178,16 @@ def _annotate_existing_records(index: dict[str, Any]) -> None:
         )
 
 
-def build(run_root: Path, dashboard_root: Path) -> dict[str, Any]:
+def build(
+    run_root: Path,
+    dashboard_root: Path,
+    *,
+    batch_correction: str = COMBAT_V1,
+    proteomics_run_root: Path | None = None,
+) -> dict[str, Any]:
     transcript_stage = run_root / "experiments/04_variance_filtered/transcriptomics"
     protein_path = (
-        run_root
+        (proteomics_run_root or run_root)
         / "experiments/01_batch_corrected/proteomics/06_kme_module_diagnosis"
         / PROTEIN_SPECIMEN
         / PROTEOMICS_REFERENCE_CONDITION
@@ -285,7 +298,7 @@ def build(run_root: Path, dashboard_root: Path) -> dict[str, Any]:
                 compression={"method": "gzip", "compresslevel": 6, "mtime": 0},
             )
 
-            base_record_id = _base_record_id(row)
+            base_record_id = _base_record_id(row, batch_correction)
             transcript_record_id = (
                 f"{base_record_id}::after_outlier" if after_outlier else base_record_id
             )
@@ -315,6 +328,7 @@ def build(run_root: Path, dashboard_root: Path) -> dict[str, Any]:
             index["records"][record_id] = {
                 "title": (
                     f"{row.cell_type} - CSF RNA x PB protein"
+                    + (" - ComBat v2" if batch_correction == COMBAT_V2 else " - ComBat v1")
                     + (" - After outlier removal" if after_outlier else "")
                 ),
                 "network_id": row.network_id,
@@ -326,6 +340,7 @@ def build(run_root: Path, dashboard_root: Path) -> dict[str, Any]:
                 "strategy": row.strategy,
                 "mode": row.mode,
                 "analysis_branch": branch,
+                "batch_correction": batch_correction,
                 "proteomics_condition": PROTEOMICS_REFERENCE_CONDITION,
                 "path": f"cross-omics-overlap/shards/{filename}",
                 "transcript_modules": transcript_module_names,
@@ -338,6 +353,7 @@ def build(run_root: Path, dashboard_root: Path) -> dict[str, Any]:
 
             summary = {
                 "record_id": record_id,
+                "batch_correction": batch_correction,
                 "transcript_record_id": transcript_record_id,
                 "analysis_branch": branch,
                 "threshold": row.threshold,
@@ -369,6 +385,7 @@ def build(run_root: Path, dashboard_root: Path) -> dict[str, Any]:
         record_id
         for record_id in index.get("records", {})
         if record_id.endswith(f"::protein_{PROTEIN_SPECIMEN}")
+        and index["records"][record_id].get("batch_correction") == batch_correction
         and record_id not in generated_ids
     ]
     for record_id in stale_ids:
@@ -414,6 +431,7 @@ def build(run_root: Path, dashboard_root: Path) -> dict[str, Any]:
     summary_table.to_csv(summary_path, index=False)
     method = {
         "method": "absolute-own-module-kME weighted Jaccard",
+        "batch_correction": batch_correction,
         "formula": "sum_g min(w_RNA,g, w_protein,g) / sum_g max(w_RNA,g, w_protein,g)",
         "transcript_specimen": TRANSCRIPT_SPECIMEN,
         "protein_specimen": PROTEIN_SPECIMEN,
@@ -444,12 +462,18 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--dashboard-root", type=Path, required=True)
+    parser.add_argument("--batch-correction", choices=(COMBAT_V1, COMBAT_V2), default=COMBAT_V1)
+    parser.add_argument("--proteomics-run-root", type=Path)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    result = build(args.run_root.resolve(), args.dashboard_root.resolve())
+    result = build(
+        args.run_root.resolve(), args.dashboard_root.resolve(),
+        batch_correction=args.batch_correction,
+        proteomics_run_root=args.proteomics_run_root,
+    )
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 

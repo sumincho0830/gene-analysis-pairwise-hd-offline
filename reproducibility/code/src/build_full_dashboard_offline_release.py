@@ -28,17 +28,22 @@ PLOTLY_CDN_RE = re.compile(
 CODE_FILES = (
     "code/src/build_experiment_inspection_dashboard.py",
     "code/src/build_full_dashboard_offline_release.py",
+    "code/src/final_jaccard_dashboard.html",
+    "code/src/build_final_jaccard_bubble_figure.py",
+    "code/src/build_final_jaccard_protein_scope.py",
+    "code/src/build_cross_omics_view.py",
     "code/src/run_transcriptomics_me_merge_candidates.py",
     "code/src/analyze_me_merge_candidates.py",
     "code/src/run_official_kme_module_diagnosis.py",
     "code/src/run_pairwise_hd_module_diagnosis.py",
     "code/src/run_cross_omics_kme_weighted_jaccard.py",
-    "code/src/build_final_jaccard_protein_scope.py",
-    "code/src/build_final_jaccard_figure.py",
-    "code/src/build_final_jaccard_bubble_figure.py",
-    "code/src/final_jaccard_dashboard.html",
+    "code/src/format_corrected_transcriptomics_all_fast.py",
+    "code/src/format_files.py",
+    "code/src/run_transcriptomics_selected_cuts.py",
+    "code/src/run_transcriptomics_stage1.py",
+    "code/src/run_transcriptomics_variance_filtered.py",
+    "code/src/transcriptomics_qc.py",
     "code/src/run_transcriptomics_outlier_removed_diagnostic.py",
-    "code/src/backfill_outlier_after_preprocess_qc.py",
     "code/src/run_transcriptomics_outlier_removed_find_modules.py",
     "code/src/run_transcriptomics_outlier_removed_module_diagnosis.py",
     "code/src/finalize_outlier_removal_no_cut.py",
@@ -48,11 +53,6 @@ CODE_FILES = (
     "code/src/pipeline_provenance.py",
     "code/tests/test_pairwise_hd_module_diagnosis.py",
     "code/tests/test_cross_omics_kme_weighted_jaccard.py",
-    "code/tests/test_final_jaccard_bubble_figure.py",
-    "code/tests/test_final_jaccard_navigation.py",
-    "code/tests/test_final_jaccard_protein_scope.py",
-    "code/tests/test_after_preprocess_outlier_navigation.py",
-    "code/tests/test_proteomics_qc_comparison.py",
     "PIPELINE_SPEC.md",
     "CHANGELOG.md",
 )
@@ -66,6 +66,33 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def release_hash_paths(output_root: Path) -> list[Path]:
+    """Return release payload files, excluding Git bookkeeping and Python caches."""
+
+    return sorted(
+        path
+        for path in output_root.rglob("*")
+        if path.is_file()
+        and path.name != "SHA256SUMS.txt"
+        and path.suffix != ".pyc"
+        and "__pycache__" not in path.relative_to(output_root).parts
+        and ".git" not in path.relative_to(output_root).parts
+    )
+
+
+def write_release_checksums(output_root: Path) -> list[Path]:
+    hash_paths = release_hash_paths(output_root)
+    (output_root / "SHA256SUMS.txt").write_text(
+        "\n".join(
+            f"{sha256(path)}  {path.relative_to(output_root).as_posix()}"
+            for path in hash_paths
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return hash_paths
+
+
 def copy_verified(source: Path, target: Path) -> None:
     if not source.is_file():
         raise FileNotFoundError(source)
@@ -73,6 +100,30 @@ def copy_verified(source: Path, target: Path) -> None:
     shutil.copy2(source, target)
     if source.stat().st_size != target.stat().st_size or sha256(source) != sha256(target):
         raise IOError(f"Copy verification failed: {source} -> {target}")
+
+
+def copy_final_jaccard_assets(dashboard_root: Path, output_root: Path) -> None:
+    relative_files = [Path("final-jaccard.html")]
+    for folder in ("figures/final_jaccard", "figures/final_jaccard_bubble"):
+        relative_files.extend(
+            path.relative_to(dashboard_root)
+            for path in (dashboard_root / folder).rglob("*")
+            if path.is_file()
+        )
+    for relative in relative_files:
+        source = dashboard_root / relative
+        if source.is_file():
+            copy_verified(source, output_root / relative)
+
+
+def copy_overlap_assets(dashboard_root: Path, output_root: Path) -> list[Path]:
+    targets = []
+    for source in (dashboard_root / "cross-omics-overlap").rglob("*"):
+        if source.is_file():
+            target = output_root / source.relative_to(dashboard_root)
+            copy_verified(source, target)
+            targets.append(target)
+    return targets
 
 
 def read_dashboard_bundle(path: Path) -> dict[str, Any]:
@@ -271,25 +322,8 @@ def build(
         shutil.rmtree(obsolete_selected_cut)
 
     copy_verified(dashboard_root / "index.html", output_root / "index.html")
+    copy_final_jaccard_assets(dashboard_root, output_root)
     copy_verified(plotly_js, output_root / "assets" / "vendor" / "plotly.min.js")
-    publication_files: list[Path] = []
-    final_jaccard_page = dashboard_root / "final-jaccard.html"
-    if final_jaccard_page.is_file():
-        target = output_root / "final-jaccard.html"
-        copy_verified(final_jaccard_page, target)
-        publication_files.append(target)
-    for relative_root in (
-        Path("figures/final_jaccard"),
-        Path("figures/final_jaccard_bubble"),
-    ):
-        source_root = dashboard_root / relative_root
-        if not source_root.is_dir():
-            continue
-        for source in source_root.rglob("*"):
-            if source.is_file():
-                target = output_root / source.relative_to(dashboard_root)
-                copy_verified(source, target)
-                publication_files.append(target)
     module_member_root = dashboard_root / "module-members"
     module_member_files: list[Path] = []
     if module_member_root.is_dir():
@@ -298,14 +332,7 @@ def build(
                 target = output_root / source.relative_to(dashboard_root)
                 copy_verified(source, target)
                 module_member_files.append(target)
-    cross_overlap_root = dashboard_root / "cross-omics-overlap"
-    cross_overlap_files: list[Path] = []
-    if cross_overlap_root.is_dir():
-        for source in cross_overlap_root.rglob("*"):
-            if source.is_file():
-                target = output_root / source.relative_to(dashboard_root)
-                copy_verified(source, target)
-                cross_overlap_files.append(target)
+    cross_overlap_files = copy_overlap_assets(dashboard_root, output_root)
 
     artifact_sources: dict[str, tuple[Path, Path, str]] = {}
     file_sources: dict[str, tuple[Path, Path]] = {}
@@ -433,7 +460,6 @@ def build(
         "unique_files": len(file_sources),
         "module_member_files": len(module_member_files),
         "cross_omics_overlap_files": len(cross_overlap_files),
-        "publication_files": len(publication_files),
         "lossless_webp_sources": len(image_pairs),
         "lossless_webp_files": len(unique_image_targets),
         "lossless_webp_converted_this_run": len(image_results),
@@ -455,38 +481,49 @@ def build(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
 
-    hash_paths = sorted(
-        path
-        for path in output_root.rglob("*")
-        if path.is_file() and path.name != "SHA256SUMS.txt"
-    )
-    (output_root / "SHA256SUMS.txt").write_text(
-        "\n".join(
-            f"{sha256(path)}  {path.relative_to(output_root).as_posix()}"
-            for path in hash_paths
-        )
-        + "\n",
-        encoding="utf-8",
-    )
+    hash_paths = write_release_checksums(output_root)
     manifest["release_files"] = len(hash_paths) + 1
     (output_root / "release_manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     # Manifest changed after the first checksum pass; rebuild the checksums once.
-    hash_paths = sorted(
-        path
-        for path in output_root.rglob("*")
-        if path.is_file() and path.name != "SHA256SUMS.txt"
+    write_release_checksums(output_root)
+    return manifest
+
+
+def refresh_release_checksums(output_root: Path) -> dict[str, Any]:
+    manifest_path = output_root / "release_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    hash_paths = release_hash_paths(output_root)
+    manifest["release_files"] = len(hash_paths) + 1
+    manifest["cross_omics_overlap_files"] = sum(
+        path.relative_to(output_root).parts[0] == "cross-omics-overlap"
+        for path in hash_paths
     )
-    (output_root / "SHA256SUMS.txt").write_text(
-        "\n".join(
-            f"{sha256(path)}  {path.relative_to(output_root).as_posix()}"
-            for path in hash_paths
-        )
-        + "\n",
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
+    write_release_checksums(output_root)
     return manifest
+
+
+def refresh_final_jaccard(run_root: Path, output_root: Path) -> dict[str, Any]:
+    dashboard_root = run_root / "dashboard"
+    copy_final_jaccard_assets(dashboard_root, output_root)
+    copy_overlap_assets(dashboard_root, output_root)
+    relative = Path("module-members/cross-omics-view.js")
+    copy_verified(dashboard_root / relative, output_root / relative)
+
+    data_path = output_root / "dashboard-data.js"
+    bundle = read_dashboard_bundle(data_path)
+    source_bundle = read_dashboard_bundle(dashboard_root / "dashboard-data.js")
+    bundle["cross_omics_overlap_explorer"] = source_bundle["cross_omics_overlap_explorer"]
+    data_path.write_text(
+        DATA_PREFIX + json.dumps(bundle, ensure_ascii=False, separators=(",", ":")) + ";\n",
+        encoding="utf-8",
+    )
+    return refresh_release_checksums(output_root)
 
 
 def parse_args() -> argparse.Namespace:
@@ -511,11 +548,28 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--checksums-only",
+        action="store_true",
+        help="Refresh release checksums without rebuilding dashboard assets.",
+    )
+    parser.add_argument(
+        "--final-jaccard-only", action="store_true",
+        help="Refresh Final Jaccard, overlap and diagnosis assets in an existing release.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.checksums_only:
+        manifest = refresh_release_checksums(args.output_root.resolve())
+        print(json.dumps(manifest, indent=2, ensure_ascii=False))
+        return
+    if args.final_jaccard_only:
+        manifest = refresh_final_jaccard(args.run_root.resolve(), args.output_root.resolve())
+        print(json.dumps(manifest, indent=2, ensure_ascii=False))
+        return
     manifest = build(
         args.run_root.resolve(),
         args.output_root.resolve(),

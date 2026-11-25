@@ -1,107 +1,5 @@
 # Pipeline change log
 
-## 2026-11-24 - Add proteomics raw vs batch-corrected QC comparison
-
-- Added six dashboard records covering Raw and Batch corrected proteomics for
-  ALL, CSF, and PB scopes.
-- Exposed the saved heatmap, PCA metadata, static PCA 3D, interactive PCA 3D,
-  intensity distribution, PCA scores, statistics, outlier, and provenance
-  outputs without recalculating expression values or PCA coordinates.
-- Aligned Raw and Batch corrected panels side by side in the existing Cell type
-  comparison view and retained separate sample/feature counts for each run.
-- Added an offline release test that verifies every required QC artifact exists.
-
-## 2026-11-24 - Restore post-preprocess outlier-removal comparison
-
-- Generated the standard ten descriptive/distribution outputs from each saved
-  `outlier_removal/03_preprocess/01_cut_diagnostic/matrix_before_cut.csv.gz`.
-- These matrices are the outputs of PyWGCNA `preprocess(cut=inf)` after removing
-  `Ng_MOG1` and `Ng_HD3`; no finite sample cut, imputation, or additional value
-  transform was introduced.
-- Added `Before Outlier Removal` and `After Outlier Removal` controls to the
-  `After Preprocess` stage while preserving the selected output type when the
-  user switches removal state.
-- Packaged complete post-preprocess heatmap, PCA, interactive PCA 3D, and PCA
-  score artifacts for 165 eligible transcriptomics networks.
-
-## 2026-11-24 - Preserve Final Jaccard view during pair inspection
-
-- Changed embedded Final Jaccard heatmap cells and ranking links to open the
-  existing RNA-protein module comparison modal in the parent dashboard.
-- The Final Jaccard page, selected condition, and iframe scroll position now
-  remain unchanged while inspecting or closing a module pair.
-- Kept the original deep-link navigation as the fallback when
-  `final-jaccard.html` is opened as a standalone page.
-- Restricted parent-window messages to the embedded Final Jaccard iframe and
-  known cross-omics records.
-
-## 2026-11-24 - Permutation-tested final CSF Jaccard bubble figures
-
-- Fixed the comparison to CSF, cell-separated transcriptomics, HVG top 9,000,
-  removal of `Ng_MOG1` and `Ng_HD3`, and exclusion of `cell_type=other`.
-- Generated separate threshold-5 and threshold-10 bubble figures in PNG, PDF,
-  and SVG. Dot area encodes the absolute-own-kME-weighted Jaccard similarity;
-  fill color encodes permutation BH-FDR q.
-- Used 10,000 deterministic gene-label permutations per cell network. The null
-  preserves both module sizes and both omics' absolute own-module kME weights,
-  while breaking RNA-protein gene identity correspondence.
-- Computed one-sided empirical p-values as `(b+1)/(B+1)` and applied
-  Benjamini-Hochberg correction across every module pair within each threshold
-  figure.
-- Threshold 5 had no pair at q<=0.25. Threshold 10 had five exploratory pairs
-  at q<=0.25, but neither threshold had a pair at q<=0.10.
-- Exported all pair statistics, q<=0.25 candidate rows, ranked shared genes, and
-  RNA/protein module diagnosis evidence for MS, MOGAD, and NMOSD versus HD.
-
-## 2026-11-24 - Publication-style final CSF Jaccard heatmap
-
-- Added a static publication figure for the dashboard's default final condition:
-  CSF, threshold 5 cells, HVG top 9,000, after removal of `Ng_MOG1` and `Ng_HD3`.
-- Preserved all 12 non-`other` cell types, 250 RNA modules, 18 protein modules,
-  and all 4,500 saved kME-weighted Jaccard values without aggregation or
-  recalculation.
-- Added cell-type boundaries, RNA-best markers, reciprocal-best outlines, a
-  shared similarity scale, and downloadable PNG, PDF, and SVG outputs.
-
-## 2026-11-24 - Restore module-diagnosis forest plot in gene-overlap explorer
-
-- Restored the diagnosis forest plot below the shared, RNA-only, and
-  protein-only gene lists in the RNA-protein module comparison panel.
-- The selected RNA and protein modules are now shown side by side for MS,
-  MOGAD, and NMOSD versus HD with point-biserial `r`, approximate Fisher-z
-  95% confidence intervals, `p`, BH-FDR `q`, and group sample counts.
-- Added the saved after-outlier-removal transcriptomics diagnosis statistics to
-  the offline payload, so before/after views use the diagnosis results from the
-  matching analysis branch rather than reusing one branch.
-- Browser-validated the CSF cDC `darkgrey` RNA module against the CSF `red`
-  protein module under threshold 10 cells and HVG top 9,000.
-
-## 2026-11-24 - Final CSF cross-omics Jaccard comparison page
-
-- Added a top-level `Final CSF Jaccard` dashboard view.
-- Fixed the comparison scope to CSF, `cell_separate`, and all cell types except
-  `other`.
-- Added the full 12-condition hierarchy: threshold 5/10 cells, CPM-only/HVG
-  top 9,000/HVG top 5,000, and before/after outlier removal.
-- Combined every selected cell type-RNA module as heatmap rows and every CSF
-  protein module as columns while preserving the saved kME-weighted Jaccard
-  values.
-- Heatmap cells deep-link to the existing RNA-protein module comparison so the
-  shared, RNA-only, protein-only, and shared-gene kME evidence remains directly
-  inspectable.
-- Added a top-100 descriptive ranking and current-condition CSV export. The
-  page explicitly marks permutation p-values as not yet calculated.
-
-## 2026-11-24 - Exclude `cell_type=other` from cross-omics Jaccard views
-
-- Kept the 12 `other` experiment records and their non-cross-omics QC artifacts.
-- Removed `cross_omics_similarity` and `after_outlier_cross_omics_similarity`
-  from the visible artifacts of `cell_type=other` records.
-- Excluded the corresponding 24 before/after records from the interactive
-  RNA-protein module comparison index. Other cell types are unchanged.
-- Preserved the saved source artifacts so the decision remains auditable and
-  can be reversed without rerunning the analyses.
-
 ## 2026-11-23 - After-outlier-removal cut recommendation review
 
 - Changed the review suggestion to the exact midpoint of the global largest
@@ -477,3 +375,16 @@
 - 기본 `findModules` 조건과 공식 kME/module-diagnosis, pairwise-HD, after-outlier cross-omics 결과를 별도 branch에 저장하도록 실행 코드를 추가했다.
 - Inspection dashboard의 Preprocess/Find Modules/Downstream 각각에서 Before/After Outlier Removal 결과를 전환해 비교하도록 artifact registry를 확장했다.
 - `validate_transcriptomics_outlier_removed_downstream.py`를 추가해 finite cut 부재, 두 subject 부재, 산출물 완결성과 downstream status를 함께 검증하도록 했다.
+
+## 2026-11-25 - Updated transcriptomics ComBat design
+
+- 새로 전달받은 `3. Transcriptomic Corrected Final`을 기존 결과와 분리된 `runs/combat_v2_cell_diagnosis_tissue` 실행 루트에 연결했다.
+- 기존 ComBat v1은 cell type과 diagnosis 보존, 새 ComBat v2는 cell type, diagnosis, tissue/specimen 보존으로 명시했다.
+- 새 보정본은 기존 보정값 위에 다시 보정한 값이 아니라 동일 upstream CPM에서 다시 적합된 대체 보정본으로 기록했다.
+- Uncorrected CPM, ComBat v1, ComBat v2에 대해 동일한 threshold, cell type, specimen 범위의 heatmap/PCA 비교 산출물을 생성하는 코드를 추가했다.
+- Dashboard record에 `batch_correction` dimension을 추가하고 최상위 Batch correction 탭에서 세 버전을 전환하도록 builder를 확장했다.
+
+## 2026-11-25 - Final Jaccard by ComBat version
+
+- Final Heatmap과 순위, 유전자 상세, CSV를 v1과 v2로 분리하고 v2 CSF RNA × PB protein 비교를 추가했다.
+- v2 CSF RNA × CSF protein의 outlier 제거 후 HVG 9,000 결과에서 threshold 5/10별 10,000회 permutation 및 BH-FDR을 계산하고, bubble figure와 통계 및 후보 근거 파일을 연결했다.
