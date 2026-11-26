@@ -33,11 +33,37 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
 .legend{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--muted)}.gradient{width:155px;height:12px;background:linear-gradient(90deg,rgba(31,100,133,.05),rgba(31,100,133,.95));border:1px solid var(--line)}
 .table-wrap{border:1px solid var(--line);max-height:520px;overflow:auto}table.ranking{width:100%;border-collapse:collapse;font-size:.82rem}.ranking th{position:sticky;top:0;background:#fff;z-index:1;text-align:left;border-bottom:1px solid #aeb7bd;padding:8px}.ranking td{border-bottom:1px solid #eceff1;padding:7px 8px}.ranking td.num{text-align:right;font-variant-numeric:tabular-nums}.badge{display:inline-block;padding:2px 5px;border:1px solid #aeb7bd;font-size:.7rem}.empty{padding:70px 20px;text-align:center;color:var(--muted)}
 @media(max-width:900px){main,header{padding-left:16px;padding-right:16px}.controls{grid-template-columns:1fr}.section-head{align-items:flex-start;flex-direction:column}.heatmap th.row-label{min-width:175px}}
+.final-jaccard-views{display:flex;gap:7px;margin-bottom:17px}
+.final-jaccard-views[hidden],#finalHeatmapView[hidden],#finalScatterView[hidden]{display:none}
+.scatter-controls,.scatter-threshold{display:flex;flex-wrap:wrap;align-items:end;gap:10px 15px;padding-bottom:13px;border-bottom:1px solid var(--line)}
+.scatter-downloads{margin-left:auto}
+.scatter-threshold{align-items:center;margin:13px 0 16px}
+.scatter-threshold label{font-size:.87rem;font-weight:600}
+.scatter-threshold output{padding-left:6px;color:var(--accent);font-variant-numeric:tabular-nums}
+.scatter-threshold input{width:min(300px,55vw);accent-color:var(--accent)}
+#scatterCount{font-size:.85rem;color:var(--muted);margin-left:auto}
+.scatter-layout{display:grid;grid-template-columns:minmax(0,1.63fr) minmax(390px,1fr);gap:15px;align-items:start}
+.scatter-plot svg{width:100%;height:auto;display:block}
+.scatter-pairs h2{font-size:1rem;font-weight:600;margin:0 0 8px}
+.scatter-table{max-height:490px}
+.scatter-table th,.scatter-table td{padding:6px}
+.scatter-table .action{padding:4px 7px}
+.scatter-table td.num{white-space:nowrap}
+.scatter-table tbody tr:has(a){cursor:pointer}.scatter-table tbody tr:has(a):hover{background:var(--soft)}
+.scatter-pages{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:8px;font-size:.8rem;color:var(--muted)}
+.scatter-pages button:disabled{opacity:.48;cursor:default}
+@media(max-width:1000px){.scatter-layout{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
 <header><h1>Final CSF RNA–protein module comparison</h1><p>All cell types except <code>other</code> · compare CSF RNA modules with CSF, PB, or both protein networks · saved kME-weighted Jaccard values</p></header>
 <main>
+  <nav class="final-jaccard-views" id="finalJaccardViews" aria-label="Jaccard visualization" hidden>
+    <button type="button" data-jaccard-view="heatmap" aria-pressed="true" class="active">Heatmap</button>
+    <button type="button" data-jaccard-view="scatter" aria-pressed="false">Permutation scatter</button>
+  </nav>
+  <section id="finalScatterView" aria-label="Permutation scatter" hidden></section>
+  <section id="finalHeatmapView">
   <section class="controls" aria-label="Analysis condition">
     <div class="correction-control"><span class="control-label">Batch correction</span><div class="button-row" id="correctionControls"></div></div>
     <div><span class="control-label">Protein network</span><div class="button-row" id="proteinScopeControls"></div></div>
@@ -80,11 +106,14 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
     <button id="downloadCsv">Download current CSV</button>
   </div>
   <div class="table-wrap"><table class="ranking"><thead><tr id="rankingHeader"><th>#</th><th>Cell type</th><th>RNA module</th><th>Protein network</th><th>Protein module</th><th>Weighted Jaccard</th><th>Plain Jaccard</th><th>Shared genes</th><th>Permutation p</th><th>BH-FDR q</th><th>Best-match status</th><th>Genes</th></tr></thead><tbody id="ranking"></tbody></table></div>
+  </section>
 </main>
 <script src="module-members/gene-suggestions.js"></script>
 <script src="cross-omics-overlap/overlap-index.js"></script>
 <script src="figures/final_jaccard_bubble/viewer-statistics.js"></script>
 <script src="figures/final_jaccard_bubble/combat_v2/viewer-statistics.js"></script>
+<script src="figures/final_jaccard_scatter/viewer-scatter-data.js"></script>
+<script src="figures/final_jaccard_scatter/viewer-scatter.js"></script>
 <script>
 const records=(window.CROSS_OMICS_OVERLAP_INDEX&&window.CROSS_OMICS_OVERLAP_INDEX.records)||{};
 const combatV1='combat_v1_cell_diagnosis',combatV2='combat_v2_cell_diagnosis_tissue';
@@ -204,6 +233,11 @@ function setCorrection(correction){
   state.correction=correction;
   render();
 }
+function selectCorrection(correction){
+  if(correction===state.correction)return;
+  setCorrection(correction);
+  if(window.parent!==window)window.parent.postMessage({type:'final-jaccard-correction-changed',correction:state.correction},'*');
+}
 window.addEventListener('message',event=>{
   if(window.parent===window||event.source!==window.parent||event.data?.type!=='set-final-jaccard-correction')return;
   setCorrection(event.data.correction);
@@ -215,9 +249,7 @@ function renderControls(){
   document.querySelectorAll('[data-key]').forEach(button=>button.onclick=()=>{
     const {key,value}=button.dataset;
     if(key==='correction'){
-      if(value===state.correction)return;
-      setCorrection(value);
-      if(window.parent!==window)window.parent.postMessage({type:'final-jaccard-correction-changed',correction:state.correction},'*');
+      selectCorrection(value);
       return;
     }
     state[key]=value;
@@ -425,9 +457,31 @@ function renderResults(recordsNow,pairs,statistics,maxValue,statusMessage=''){
   document.getElementById('summary').innerHTML=`<span><b>${esc(correction)}</b></span><span>RNA specimen <b>CSF</b></span><span>Protein network <b>${proteinScope}</b></span><span>Threshold <b>${threshold}</b></span><span>Features <b>${strategy}</b></span><span><b>${removal}</b></span><span>Cell types <b>${heatmap.cellCount}</b></span><span>RNA modules <b>${heatmap.rowCount}</b></span><span>Protein columns <b>${heatmap.proteinCount}</b></span><span>Module pairs <b>${pairs.length.toLocaleString()}</b></span>`;
   renderPublication(statistics,correction,threshold);
 }
+const viewNav=document.getElementById('finalJaccardViews');
+const scatterPanel=document.getElementById('finalScatterView');
+const heatmapPanel=document.getElementById('finalHeatmapView');
+const scatterData=window.FINAL_JACCARD_SCATTER_DATA;
+const scatter=scatterData&&window.FinalJaccardScatter?.create(scatterPanel,scatterData,{href:deepLink,onCorrection:selectCorrection});
+viewNav.hidden=!scatter;
+let finalView='heatmap';
+for(const button of viewNav.querySelectorAll('button')){
+  button.onclick=()=>{
+    finalView=button.dataset.jaccardView;
+    const isScatter=finalView==='scatter';
+    scatterPanel.hidden=!isScatter;
+    heatmapPanel.hidden=isScatter;
+    for(const option of viewNav.querySelectorAll('button')){
+      const active=option.dataset.jaccardView===finalView;
+      option.classList.toggle('active',active);
+      option.setAttribute('aria-pressed',active);
+    }
+    render();
+  };
+}
 let searchRevision=0;
 async function render(){
   const revision=++searchRevision,{sharedGenes:genes,sharedGeneMode:mode}=state;
+  if(finalView==='scatter'){scatter.setCorrection(state.correction);return}
   renderControls();
   const statistics=selectedStatistics(),recordsNow=selectedRecords(),pairs=selectedPairs(recordsNow,statistics);
   const maxValue=Math.max(0,...pairs.map(pair=>Number(pair.weighted_jaccard)||0));

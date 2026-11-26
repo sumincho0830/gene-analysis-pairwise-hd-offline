@@ -2314,6 +2314,9 @@ def build(run_root: Path, combat_v2_run_root: Path | None = None) -> None:
         Path(__file__).with_name("final_jaccard_dashboard.html"),
         dashboard_root / "final-jaccard.html",
     )
+    from build_final_jaccard_scatter import build_final_jaccard_scatter
+
+    build_final_jaccard_scatter(run_root, dashboard_root)
     readme_path = dashboard_root / "README.md"
     readme_path.write_text(
         """# Experiment inspection dashboard

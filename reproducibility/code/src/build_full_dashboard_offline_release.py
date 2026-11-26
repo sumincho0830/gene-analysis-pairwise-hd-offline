@@ -29,6 +29,8 @@ CODE_FILES = (
     "code/src/build_experiment_inspection_dashboard.py",
     "code/src/build_full_dashboard_offline_release.py",
     "code/src/final_jaccard_dashboard.html",
+    "code/src/build_final_jaccard_scatter.py",
+    "code/src/final_jaccard_scatter.js",
     "code/src/build_final_jaccard_bubble_figure.py",
     "code/src/build_final_jaccard_protein_scope.py",
     "code/src/build_cross_omics_view.py",
@@ -104,7 +106,7 @@ def copy_verified(source: Path, target: Path) -> None:
 
 def copy_final_jaccard_assets(dashboard_root: Path, output_root: Path) -> None:
     relative_files = [Path("final-jaccard.html")]
-    for folder in ("figures/final_jaccard", "figures/final_jaccard_bubble"):
+    for folder in ("figures/final_jaccard", "figures/final_jaccard_bubble", "figures/final_jaccard_scatter"):
         relative_files.extend(
             path.relative_to(dashboard_root)
             for path in (dashboard_root / folder).rglob("*")
