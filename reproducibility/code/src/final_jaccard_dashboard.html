@@ -11,11 +11,29 @@ header{padding:28px 34px 18px;border-bottom:1px solid var(--line)}h1{font-size:1
 main{padding:22px 34px 64px;max-width:1900px;margin:auto}.controls{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:18px;padding-bottom:17px;border-bottom:1px solid var(--line)}
 .control-label{display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}.button-row{display:flex;flex-wrap:wrap;gap:6px}.correction-control{grid-column:1/-1;padding-bottom:14px;border-bottom:1px solid var(--line)}
 button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;text-decoration:none}button:hover,.action:hover{background:var(--soft)}button.active{background:var(--selected);border-color:#90aab8;font-weight:700}
+.gene-filter{display:flex;align-items:flex-end;flex-wrap:wrap;gap:7px;margin-top:16px}
+.gene-filter label{display:block;margin-bottom:4px;font-size:.82rem;font-weight:600}
+.gene-filter textarea,.gene-filter select{font:inherit;font-size:.88rem;max-width:100%;padding:7px 9px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.gene-filter textarea{display:block;width:min(320px,75vw);min-height:34px;resize:vertical}
+.ranking .matched-genes{max-width:270px;overflow-wrap:anywhere}
+.gene-presets{margin:14px 0 0;padding:10px 12px;border:1px solid var(--line)}
+.gene-preset-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-bottom:9px}
+.gene-preset-head h2{margin:0;font-size:.87rem;font-weight:700}
+.gene-preset-groups{display:flex;flex-wrap:wrap;gap:9px 15px}
+.gene-preset-group{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.gene-preset-group>span{padding:3px 0;font-size:.76rem;color:var(--muted)}
+.gene-preset-group .button-row{gap:3px}
+.gene-presets button{padding:4px 7px;font-size:.76rem}
+.gene-preset-group button[data-group]{border-color:transparent;padding-left:0}
+.gene-presets button[aria-pressed="true"],.gene-presets button[aria-pressed="mixed"]{background:var(--selected);border-color:#90aab8;font-weight:700}
+.gene-presets button[aria-pressed="mixed"]{border-style:dashed}
+.gene-filter-status{align-self:center;font-size:.84rem;color:var(--muted)}
 .summary{display:flex;flex-wrap:wrap;gap:8px 22px;margin:16px 0;padding:11px 13px;border:1px solid var(--line);background:var(--soft);font-size:.87rem}.summary b{font-variant-numeric:tabular-nums}
 .note{padding:10px 13px;border-left:3px solid var(--warm);background:#fff8f4;color:#5c4437;font-size:.86rem;line-height:1.5;margin-bottom:18px}
 .publication{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 13px;border:1px solid var(--line);background:#fff;margin-bottom:18px;font-size:.86rem}.publication-links{display:flex;gap:7px;flex-wrap:wrap}.publication b{font-weight:700}
 .publication[hidden],.note[hidden]{display:none}.actions select{font:inherit;font-size:.88rem;border:1px solid var(--line);padding:6px 8px;background:#fff;color:var(--ink)}
 .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin:26px 0 9px}.section-head h2{font-size:1.08rem;font-weight:600;margin:0}.section-head p{font-size:.82rem}.actions{display:flex;gap:7px;flex-wrap:wrap}
+.ranking-controls{margin-bottom:9px}.ranking-controls select[hidden]{display:none}
 .heatmap-wrap{border:1px solid var(--line);max-height:68vh;overflow:auto;background:#fff}.heatmap{border-collapse:separate;border-spacing:0;font-size:.73rem}.heatmap th,.heatmap td{padding:0;border-right:1px solid #edf0f2;border-bottom:1px solid #edf0f2;white-space:nowrap;text-align:center}
 .heatmap thead th{position:sticky;top:0;z-index:4;background:#fff;height:115px;vertical-align:bottom;padding:5px}.heatmap thead th.rotate>span{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:105px}.heatmap th.row-label{position:sticky;left:0;z-index:2;background:#fff;text-align:left;padding:4px 8px;min-width:225px;font-weight:400}.heatmap tr.cell-start th.row-label{border-top:2px solid #87949c;font-weight:700}.heatmap td{padding:2px}.heatmap a{display:block;min-width:45px;padding:4px 3px;color:#172027;text-decoration:none;font-variant-numeric:tabular-nums;border:1px solid transparent}.heatmap a.high{color:#fff}.heatmap a.reciprocal{border-color:#101820;font-weight:700}.heatmap a:hover,.heatmap a:focus{outline:2px solid var(--warm);outline-offset:-2px;position:relative;z-index:1}
 .legend{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--muted)}.gradient{width:155px;height:12px;background:linear-gradient(90deg,rgba(31,100,133,.05),rgba(31,100,133,.95));border:1px solid var(--line)}
@@ -33,14 +51,46 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
     <div><span class="control-label">Feature strategy</span><div class="button-row" id="strategyControls"></div></div>
     <div><span class="control-label">Outlier removal</span><div class="button-row" id="removalControls"></div></div>
   </section>
+  <form class="gene-filter" id="sharedGeneFilter" role="search">
+    <div><label for="sharedGene">Shared gene symbols</label>
+      <textarea id="sharedGene" rows="1" placeholder="e.g. STAT1, MX1, ISG15" autocomplete="off" spellcheck="false"></textarea></div>
+    <div><label for="sharedGeneMode">Match</label>
+      <select id="sharedGeneMode"><option value="any">Any gene</option><option value="all">All genes</option></select></div>
+    <button type="submit">Filter pairs</button>
+    <button type="button" id="clearSharedGene" hidden>Clear</button>
+    <span class="gene-filter-status" id="sharedGeneStatus" role="status"></span>
+  </form>
+  <section id="dcMarkerPresets" class="gene-presets" aria-labelledby="dcMarkerTitle">
+    <div class="gene-preset-head">
+      <h2 id="dcMarkerTitle">DC marker presets</h2>
+      <button type="button" id="toggleAllDcMarkers">All 20 markers</button>
+    </div>
+    <div class="gene-preset-groups" id="dcMarkerGroups"></div>
+  </section>
   <div class="summary" id="summary"></div>
   <div class="note" id="statisticalStatus"></div>
   <div class="publication" id="permutationFigure" hidden></div>
   <div class="publication" id="v1HeatmapFigure" hidden><span><b>Publication heatmap</b> · ComBat v1 · 5 cells</span><span class="publication-links"><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.png">PNG</a><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.pdf">PDF</a><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.svg">SVG</a></span></div>
   <div class="section-head"><div><h2 id="matrixTitle">All cell type–RNA modules × CSF and PB protein modules</h2><p>Rows are grouped by cell type. Click a value to inspect shared, RNA-only, and protein-only genes without leaving this page.</p></div><div class="legend"><span>0</span><span class="gradient"></span><span id="legendMax">max</span></div></div>
   <div class="heatmap-wrap" id="heatmap"></div>
-  <div class="section-head"><div><h2>Module pair ranking</h2><p>Top 100 pairs. Inspect opens shared genes and the module–diagnosis forest plot.</p></div><div class="actions"><select id="rankBy" aria-label="Rank module pairs by"><option value="q">Lowest BH-FDR q</option><option value="similarity">Highest weighted Jaccard</option></select><button id="downloadCsv">Download current CSV</button></div></div>
-  <div class="table-wrap"><table class="ranking"><thead><tr><th>#</th><th>Cell type</th><th>RNA module</th><th>Protein network</th><th>Protein module</th><th>Weighted Jaccard</th><th>Plain Jaccard</th><th>Shared genes</th><th>Permutation p</th><th>BH-FDR q</th><th>Best-match status</th><th>Genes</th></tr></thead><tbody id="ranking"></tbody></table></div>
+  <div class="section-head"><div><h2>Module ranking</h2><p id="rankingDescription" role="status"></p></div></div>
+  <div class="actions ranking-controls">
+    <select id="rankingView" aria-label="Ranking view">
+      <option value="jaccard">Jaccard · Module pairs</option>
+      <option value="diagnosis-pairs">Diagnosis · Module pairs</option>
+      <option value="diagnosis-rna">Diagnosis · RNA modules</option>
+      <option value="diagnosis-protein">Diagnosis · Protein modules</option>
+    </select>
+    <select id="diagnosisContrast" aria-label="Diagnosis contrast" hidden>
+      <option>MS vs HD</option><option>MOGAD vs HD</option><option>NMOSD vs HD</option>
+    </select>
+    <select id="diagnosisRankBy" aria-label="Sort module pairs by diagnosis association" hidden>
+      <option value="rna">Highest RNA |r|</option><option value="protein">Highest protein |r|</option>
+    </select>
+    <select id="rankBy" aria-label="Rank module pairs by"><option value="q">Lowest Jaccard BH-FDR q</option><option value="similarity">Highest weighted Jaccard</option></select>
+    <button id="downloadCsv">Download current CSV</button>
+  </div>
+  <div class="table-wrap"><table class="ranking"><thead><tr id="rankingHeader"><th>#</th><th>Cell type</th><th>RNA module</th><th>Protein network</th><th>Protein module</th><th>Weighted Jaccard</th><th>Plain Jaccard</th><th>Shared genes</th><th>Permutation p</th><th>BH-FDR q</th><th>Best-match status</th><th>Genes</th></tr></thead><tbody id="ranking"></tbody></table></div>
 </main>
 <script src="cross-omics-overlap/overlap-index.js"></script>
 <script src="figures/final_jaccard_bubble/viewer-statistics.js"></script>
@@ -54,7 +104,7 @@ const strategies=[['01_cpm_detection','CPM only'],['02_hvg_top9000','HVG top 9,0
 const removals=[['before','Before outlier removal'],['after','After outlier removal']];
 const proteinScopes=[['CSF','CSF protein'],['PB','PB protein'],['all','All protein networks']];
 const cellOrder=['B_cell','CD4_T_cell','CD8_T_cell','cDCs','Classical_Monocytes','Macrophages','MAIT_gDT_cell','NK_cell','Non_classical_Monocytes','pDCs','Plasmablast','Proliferating_T_cell'];
-const state={correction:combatV2,proteinScope:'CSF',threshold:'threshold_5_cells',strategy:'02_hvg_top9000',removal:'after',rankBy:'q'};
+const state={correction:combatV2,proteinScope:'CSF',threshold:'threshold_5_cells',strategy:'02_hvg_top9000',removal:'after',rankBy:'q',sharedGenes:[],sharedGeneMode:'any',rankingView:'jaccard',diagnosisContrast:'MS vs HD',diagnosisRankBy:'rna'};
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const pretty=value=>String(value??'').replaceAll('_',' ');
 const pairObject=(entry,row)=>Object.fromEntries(entry.pair_columns.map((column,index)=>[column,row[index]]));
@@ -77,8 +127,77 @@ function selectedPairs(recordsNow,statistics){
   const lookup=new Map((statistics?.pairs||[]).map(([id,rna,protein,p,q])=>[pairKey(id,rna,protein),{p,q}]));
   return recordsNow.flatMap(item=>item.entry.pairs.map(row=>{
     const pair=pairObject(item.entry,row);
-    return {...pair,...lookup.get(pairKey(item.id,pair.transcript_module,pair.proteomics_module)),recordId:item.id,transcriptRecordId:item.dimensions.transcriptRecordId,cellType:item.dimensions.cellType,proteinSpecimen:item.dimensions.proteinSpecimen};
+    const proteinRecordId=`proteomics::${item.dimensions.proteinSpecimen}::${item.entry.proteomics_condition||'04_ds3_mms30_med0p10'}`;
+    return {...pair,...lookup.get(pairKey(item.id,pair.transcript_module,pair.proteomics_module)),recordId:item.id,transcriptRecordId:item.dimensions.transcriptRecordId,cellType:item.dimensions.cellType,proteinSpecimen:item.dimensions.proteinSpecimen,proteinRecordId};
   }));
+}
+const geneSetCache=new Map();
+let memberIndexes;
+function loadLocalScript(path){
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src=path;
+    script.onload=()=>{script.remove();resolve()};
+    script.onerror=()=>{script.remove();reject(new Error(`Could not load ${path}`))};
+    document.head.appendChild(script);
+  });
+}
+function loadMemberIndexes(){
+  if(!memberIndexes){
+    memberIndexes=Promise.all([
+      loadLocalScript('module-members/module-member-index.js'),
+      loadLocalScript('module-members/cross-omics-index.js'),
+    ]).catch(error=>{memberIndexes=null;throw error});
+  }
+  return memberIndexes;
+}
+const normalizeGene=value=>String(value??'').trim().toUpperCase();
+const parseSharedGenes=value=>[...new Set(value.split(/[\s,;]+/u).map(normalizeGene).filter(Boolean))];
+const hasSharedGeneFilter=()=>state.sharedGenes.length>0;
+const matchedGeneText=pair=>pair.matchedSharedGenes?.join(', ')||'';
+function transcriptGeneSet(recordId,module){
+  const key=`${recordId}::${module}`;
+  if(!geneSetCache.has(key)){
+    const meta=window.MODULE_MEMBER_INDEX?.records?.[recordId]?.modules?.[module];
+    if(!meta)throw new Error('RNA module membership is unavailable.');
+    const promise=loadLocalScript(meta.path).then(()=>{
+      const payload=window.MODULE_MEMBER_SHARDS?.[key];
+      if(!payload)throw new Error('RNA module membership could not be read.');
+      delete window.MODULE_MEMBER_SHARDS[key];
+      // Use the same mapped symbols and unassigned-feature rule as Shared genes in the detail panel.
+      const genes=new Set(payload.rows.filter(row=>!row[8]).map(row=>normalizeGene(row[1]||row[2]||row[0])));
+      return genes;
+    }).catch(error=>{geneSetCache.delete(key);throw error});
+    geneSetCache.set(key,promise);
+  }
+  return geneSetCache.get(key);
+}
+async function filterSharedGenes(pairs,genes,mode){
+  const searchable=genes.filter(gene=>!['---','NA','NAN'].includes(gene)&&!/[|;,/]/.test(gene));
+  const matches=count=>mode==='all'?count===genes.length:count>0;
+  if(!pairs.length||!searchable.length||(mode==='all'&&searchable.length!==genes.length))return [];
+  await loadMemberIndexes();
+  const proteinHitsByRecord=new Map();
+  const candidates=[];
+  for(const pair of pairs){
+    const key=pair.proteinRecordId;
+    if(!proteinHitsByRecord.has(key)){
+      const modules=window.CROSS_OMICS_INDEX?.proteinModules?.[key];
+      if(!modules)throw new Error('Protein module membership is unavailable.');
+      const hits=new Map(Object.entries(modules).map(([module,symbols])=>{
+        const proteinGenes=new Set(symbols.map(normalizeGene));
+        return [module,searchable.filter(gene=>proteinGenes.has(gene))];
+      }));
+      proteinHitsByRecord.set(key,hits);
+    }
+    const proteinHits=proteinHitsByRecord.get(key).get(pair.proteomics_module)||[];
+    if(matches(proteinHits.length))candidates.push({pair,proteinHits});
+  }
+  const checked=await Promise.all(candidates.map(async ({pair,proteinHits})=>{
+    const transcriptGenes=await transcriptGeneSet(pair.transcriptRecordId,pair.transcript_module);
+    return {...pair,matchedSharedGenes:proteinHits.filter(gene=>transcriptGenes.has(gene))};
+  }));
+  return checked.filter(pair=>matches(pair.matchedSharedGenes.length));
 }
 function deepLink(pair){const query=new URLSearchParams({cross_record:pair.recordId,transcript_module:pair.transcript_module,proteomics_module:pair.proteomics_module});return `index.html?${query.toString()}`}
 function openPairWithoutLeavingFinalPage(event){
@@ -90,25 +209,53 @@ function openPairWithoutLeavingFinalPage(event){
   window.parent.postMessage({type:'open-cross-omics-overlap',recordId,transcriptModule:target.searchParams.get('transcript_module'),proteomicsModule:target.searchParams.get('proteomics_module')},'*');
 }
 document.addEventListener('click',openPairWithoutLeavingFinalPage);
+function setCorrection(correction){
+  if(correction===state.correction||!corrections.some(([version])=>version===correction))return;
+  state.correction=correction;
+  render();
+}
+window.addEventListener('message',event=>{
+  if(window.parent===window||event.source!==window.parent||event.data?.type!=='set-final-jaccard-correction')return;
+  setCorrection(event.data.correction);
+});
 function renderControls(){
   const group=(id,values,key)=>document.getElementById(id).innerHTML=values.map(([value,label])=>`<button type="button" data-key="${key}" data-value="${value}" aria-pressed="${state[key]===value}" class="${state[key]===value?'active':''}">${label}</button>`).join('');
   group('correctionControls',corrections,'correction');
   group('proteinScopeControls',proteinScopes,'proteinScope');group('thresholdControls',thresholds,'threshold');group('strategyControls',strategies,'strategy');group('removalControls',removals,'removal');
-  document.querySelectorAll('[data-key]').forEach(button=>button.onclick=()=>{state[button.dataset.key]=button.dataset.value;render()});
+  document.querySelectorAll('[data-key]').forEach(button=>button.onclick=()=>{
+    const {key,value}=button.dataset;
+    if(key==='correction'){
+      if(value===state.correction)return;
+      setCorrection(value);
+      if(window.parent!==window)window.parent.postMessage({type:'final-jaccard-correction-changed',correction:state.correction},'*');
+      return;
+    }
+    state[key]=value;
+    render();
+  });
 }
-function renderHeatmap(recordsNow,pairs){
+function renderHeatmap(recordsNow,pairs,maxValue,statusMessage){
+  const rowModules=new Map();
+  if(hasSharedGeneFilter()){
+    for(const pair of pairs){
+      if(!rowModules.has(pair.transcriptRecordId))rowModules.set(pair.transcriptRecordId,new Set());
+      rowModules.get(pair.transcriptRecordId).add(pair.transcript_module);
+    }
+    recordsNow=recordsNow.filter(item=>rowModules.has(item.dimensions.transcriptRecordId));
+  }
   const pairMap=new Map(pairs.map(pair=>[`${pair.transcriptRecordId}\u0000${pair.transcript_module}\u0000${pair.proteinSpecimen}\u0000${pair.proteomics_module}`,pair]));
   const proteinColumns=[...new Map(pairs.map(pair=>[`${pair.proteinSpecimen}\u0000${pair.proteomics_module}`,{specimen:pair.proteinSpecimen,module:pair.proteomics_module}])).values()].sort((a,b)=>a.specimen.localeCompare(b.specimen)||a.module.localeCompare(b.module));
-  const maxValue=Math.max(0,...pairs.map(pair=>Number(pair.weighted_jaccard)||0));document.getElementById('legendMax').textContent=maxValue.toFixed(3);
+  document.getElementById('legendMax').textContent=maxValue.toFixed(3);
   const transcriptGroups=[...new Map(recordsNow.map(item=>[item.dimensions.transcriptRecordId,item])).values()];
   const rows=[];for(const item of transcriptGroups){
-    const modules=[...new Set(recordsNow.filter(candidate=>candidate.dimensions.transcriptRecordId===item.dimensions.transcriptRecordId).flatMap(candidate=>candidate.entry.transcript_modules))];
+    const modules=[...(hasSharedGeneFilter()?rowModules.get(item.dimensions.transcriptRecordId):
+      new Set(recordsNow.filter(candidate=>candidate.dimensions.transcriptRecordId===item.dimensions.transcriptRecordId).flatMap(candidate=>candidate.entry.transcript_modules)))];
     const moduleMax=new Map(modules.map(module=>[module,Math.max(0,...proteinColumns.map(protein=>Number(pairMap.get(`${item.dimensions.transcriptRecordId}\u0000${module}\u0000${protein.specimen}\u0000${protein.module}`)?.weighted_jaccard)||0))]));
     modules.sort((a,b)=>moduleMax.get(b)-moduleMax.get(a)||a.localeCompare(b)).forEach((module,index)=>rows.push({item,module,cellStart:index===0}));
   }
   const header=proteinColumns.map(protein=>`<th class="rotate"><span>${state.proteinScope==='all'?`${esc(protein.specimen)} · `:''}${esc(protein.module)}</span></th>`).join('');
-  const body=rows.map(({item,module,cellStart})=>`<tr class="${cellStart?'cell-start':''}"><th class="row-label">${esc(pretty(item.dimensions.cellType))} · ${esc(module)}</th>${proteinColumns.map(protein=>{const pair=pairMap.get(`${item.dimensions.transcriptRecordId}\u0000${module}\u0000${protein.specimen}\u0000${protein.module}`);if(!pair)return '<td>NA</td>';const value=Number(pair.weighted_jaccard)||0,intensity=maxValue?value/maxValue:0,alpha=(.05+.9*intensity).toFixed(3),marker=pair.reciprocal_best?'★':pair.transcript_best?'•':'';return `<td><a target="_top" href="${esc(deepLink(pair))}" class="${intensity>.68?'high':''} ${pair.reciprocal_best?'reciprocal':''}" style="background:rgba(31,100,133,${alpha})" title="${esc(pretty(item.dimensions.cellType))} ${esc(module)} × ${esc(protein.specimen)} protein ${esc(protein.module)}; weighted Jaccard ${value.toFixed(4)}">${value.toFixed(3)}${marker}</a></td>`}).join('')}</tr>`).join('');
-  document.getElementById('heatmap').innerHTML=rows.length?`<table class="heatmap"><thead><tr><th class="row-label">Cell type · RNA module</th>${header}</tr></thead><tbody>${body}</tbody></table>`:'<div class="empty">No saved Jaccard results for this condition.</div>';
+  const body=rows.map(({item,module,cellStart})=>`<tr class="${cellStart?'cell-start':''}"><th class="row-label">${esc(pretty(item.dimensions.cellType))} · ${esc(module)}</th>${proteinColumns.map(protein=>{const pair=pairMap.get(`${item.dimensions.transcriptRecordId}\u0000${module}\u0000${protein.specimen}\u0000${protein.module}`);if(!pair)return hasSharedGeneFilter()?'<td></td>':'<td>NA</td>';const value=Number(pair.weighted_jaccard)||0,intensity=maxValue?value/maxValue:0,alpha=(.05+.9*intensity).toFixed(3),marker=pair.reciprocal_best?'★':pair.transcript_best?'•':'';return `<td><a target="_top" href="${esc(deepLink(pair))}" class="${intensity>.68?'high':''} ${pair.reciprocal_best?'reciprocal':''}" style="background:rgba(31,100,133,${alpha})" title="${esc(pretty(item.dimensions.cellType))} ${esc(module)} × ${esc(protein.specimen)} protein ${esc(protein.module)}; weighted Jaccard ${value.toFixed(4)}${pair.matchedSharedGenes?'; matching genes '+esc(matchedGeneText(pair)):''}">${value.toFixed(3)}${marker}</a></td>`}).join('')}</tr>`).join('');
+  document.getElementById('heatmap').innerHTML=rows.length?`<table class="heatmap"><thead><tr><th class="row-label">Cell type · RNA module</th>${header}</tr></thead><tbody>${body}</tbody></table>`:`<div class="empty">${esc(statusMessage||'No saved Jaccard results for this condition.')}</div>`;
   return {rowCount:rows.length,proteinCount:proteinColumns.length,maxValue,cellCount:transcriptGroups.length};
 }
 function rankedPairs(pairs,rankBy){
@@ -117,15 +264,131 @@ function rankedPairs(pairs,rankBy){
   return [...pairs].sort(rankBy==='q'?bySignificance:bySimilarity);
 }
 const formatProbability=value=>Number.isFinite(value)?value.toPrecision(3):'—';
-function renderRanking(pairs,statistics){
+const jaccardRankingHeader=document.getElementById('rankingHeader').innerHTML;
+const rankingControls=['rankingView','rankBy','diagnosisContrast','diagnosisRankBy'];
+const rankControls=Object.fromEntries(rankingControls.map(id=>[id,document.getElementById(id)]));
+const rankingDescription=document.getElementById('rankingDescription');
+const rankingHeader=document.getElementById('rankingHeader');
+const rankingBody=document.getElementById('ranking');
+const rankingExport=document.getElementById('downloadCsv');
+const inspectLink=(pair,label='Inspect')=>`<a class="action" target="_top" href="${esc(deepLink(pair))}">${label}</a>`;
+const matchingGenesCell=pair=>pair.matchedSharedGenes?`<td class="matched-genes">${esc(matchedGeneText(pair))}</td>`:'';
+function renderJaccardRanking(pairs,statistics){
+  rankingHeader.innerHTML=jaccardRankingHeader;
+  if(hasSharedGeneFilter())rankingHeader.lastElementChild.insertAdjacentHTML('beforebegin','<th scope="col">Matching genes</th>');
   const selector=document.getElementById('rankBy');
   selector.options[0].disabled=!statistics;
   selector.value=statistics?state.rankBy:'similarity';
-  const ranked=rankedPairs(pairs,selector.value).slice(0,100);
+  const sorted=rankedPairs(pairs,selector.value);
+  rankingExport.disabled=!sorted.length;
+  rankingExport.onclick=()=>downloadJaccardCsv(sorted);
+  const ranked=hasSharedGeneFilter()?sorted:sorted.slice(0,100);
+  document.getElementById('rankingDescription').textContent=hasSharedGeneFilter()?
+    'Matching pairs. Inspect opens shared genes and the module–diagnosis forest plot.':
+    'Top 100 pairs. Inspect opens shared genes and the module–diagnosis forest plot.';
   document.getElementById('ranking').innerHTML=ranked.map((pair,index)=>{
     const status=pair.reciprocal_best?'Reciprocal best':pair.transcript_best?'RNA best':pair.proteomics_best?'Protein best':'—';
-    return `<tr><td>${index+1}</td><td>${esc(pretty(pair.cellType))}</td><td>${esc(pair.transcript_module)}</td><td>${esc(pair.proteinSpecimen)}</td><td>${esc(pair.proteomics_module)}</td><td class="num">${Number(pair.weighted_jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.shared_genes||0).toLocaleString()}</td><td class="num">${formatProbability(pair.p)}</td><td class="num">${formatProbability(pair.q)}</td><td><span class="badge">${status}</span></td><td><a class="action" target="_top" href="${esc(deepLink(pair))}">Inspect</a></td></tr>`;
-  }).join('')||'<tr><td colspan="12" class="empty">No pairs</td></tr>';
+    return `<tr><td>${index+1}</td><td>${esc(pretty(pair.cellType))}</td><td>${esc(pair.transcript_module)}</td><td>${esc(pair.proteinSpecimen)}</td><td>${esc(pair.proteomics_module)}</td><td class="num">${Number(pair.weighted_jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.jaccard||0).toFixed(4)}</td><td class="num">${Number(pair.shared_genes||0).toLocaleString()}</td><td class="num">${formatProbability(pair.p)}</td><td class="num">${formatProbability(pair.q)}</td><td><span class="badge">${status}</span></td>${matchingGenesCell(pair)}<td><a class="action" target="_top" href="${esc(deepLink(pair))}">Inspect</a></td></tr>`;
+  }).join('')||`<tr><td colspan="${rankingHeader.cells.length}" class="empty">No pairs</td></tr>`;
+}
+let diagnosisIndexPromise;
+function loadDiagnosisIndex(){
+  if(!diagnosisIndexPromise){
+    diagnosisIndexPromise=loadLocalScript('module-members/cross-omics-view.js').then(()=>{
+      if(!window.CROSS_OMICS_VIEW?.diagnosis)throw new Error('Saved diagnosis statistics are unavailable.');
+      return window.CROSS_OMICS_VIEW.diagnosis;
+    }).catch(error=>{diagnosisIndexPromise=null;throw error});
+  }
+  return diagnosisIndexPromise;
+}
+const diagnosisForModule=(index,recordId,module,contrast)=>index[recordId]?.[module]?.find(row=>row[0]===contrast);
+const hasCorrelation=estimate=>Number.isFinite(estimate?.[1]);
+const byAbsCorrelation=(a,b)=>Math.abs(b[1])-Math.abs(a[1]);
+function diagnosisPairRows(pairs,index,contrast,primary){
+  const other=primary==='rna'?'protein':'rna';
+  return rankedPairs(pairs,'similarity').map(pair=>({
+    pair,
+    rna:diagnosisForModule(index,pair.transcriptRecordId,pair.transcript_module,contrast),
+    protein:diagnosisForModule(index,pair.proteinRecordId,pair.proteomics_module,contrast),
+  })).filter(row=>hasCorrelation(row[primary])).sort((a,b)=>
+    byAbsCorrelation(a[primary],b[primary])||
+    (Math.abs(b[other]?.[1]??0)-Math.abs(a[other]?.[1]??0))
+  );
+}
+function diagnosisModuleRows(pairs,index,contrast,rna){
+  const unique=new Map();
+  for(const pair of rankedPairs(pairs,'similarity')){
+    const recordId=rna?pair.transcriptRecordId:pair.proteinRecordId;
+    const module=rna?pair.transcript_module:pair.proteomics_module;
+    const key=JSON.stringify([recordId,module]);
+    if(unique.has(key))continue;
+    unique.set(key,{recordId,module,context:rna?pretty(pair.cellType):pair.proteinSpecimen,pair,
+      estimate:diagnosisForModule(index,recordId,module,contrast)});
+  }
+  return [...unique.values()].filter(row=>hasCorrelation(row.estimate)).sort((a,b)=>byAbsCorrelation(a.estimate,b.estimate));
+}
+function diagnosisCells(estimate){
+  if(!hasCorrelation(estimate))return '<td>—</td><td>—</td><td>—</td>';
+  const [,r,,q,nHD,nTarget,,ready,reason]=estimate;
+  const marker=ready?'':`<sup title="${esc(reason||'Low sample support')}">†</sup>`;
+  return `<td class="num">${r>0?'+':''}${r.toFixed(3)}${marker}</td><td class="num">${formatProbability(q)}</td><td class="num">${nHD??'—'} / ${nTarget??'—'}</td>`;
+}
+const diagnosisFields=['r','p','q','n_hd','n_diagnosis','n_pairwise','inference_ready','non_estimable_reason'];
+const diagnosisValues=estimate=>estimate?estimate.slice(1):diagnosisFields.map(()=>'');
+function renderDiagnosisRanking(pairs,diagnosis,view,contrast,primary){
+  const isPair=view==='diagnosis-pairs',rna=view==='diagnosis-rna';
+  const rows=isPair?diagnosisPairRows(pairs,diagnosis,contrast,primary):diagnosisModuleRows(pairs,diagnosis,contrast,rna);
+  const labels=isPair?['#','Cell type','RNA module','Protein network','Protein module','RNA r','RNA q','RNA n HD / disease','Protein r','Protein q','Protein n HD / disease','Weighted Jaccard','Details']:
+    ['#',rna?'Cell type':'Protein network','Module','r','q','n HD / disease','Details'];
+  if(isPair&&hasSharedGeneFilter())labels.splice(-1,0,'Matching genes');
+  rankingHeader.innerHTML=labels.map(label=>`<th scope="col">${label}</th>`).join('');
+  const shown=hasSharedGeneFilter()?rows:rows.slice(0,100);
+  const by=isPair?(primary==='rna'?'RNA |r|':'protein |r|'):'|r|';
+  const count=shown.length===rows.length?`${rows.length.toLocaleString()} results`:`Top ${shown.length} of ${rows.length.toLocaleString()} results`;
+  rankingDescription.textContent=`${count} · ${contrast}. Ranked by ${by}. Signed r shows direction and q is BH-adjusted within each network. † marks low sample support.`;
+  rankingBody.innerHTML=(isPair?shown.map(({pair,rna,protein},i)=>
+    `<tr><td>${i+1}</td><td>${esc(pretty(pair.cellType))}</td><td>${esc(pair.transcript_module)}</td><td>${esc(pair.proteinSpecimen)}</td><td>${esc(pair.proteomics_module)}</td>${diagnosisCells(rna)}${diagnosisCells(protein)}<td class="num">${Number(pair.weighted_jaccard||0).toFixed(4)}</td>${matchingGenesCell(pair)}<td>${inspectLink(pair)}</td></tr>`
+  ):shown.map(({module,context,pair,estimate},i)=>
+    `<tr><td>${i+1}</td><td>${esc(context)}</td><td>${esc(module)}</td>${diagnosisCells(estimate)}<td>${inspectLink(pair,'Inspect best pair')}</td></tr>`
+  )).join('')||`<tr><td colspan="${labels.length}" class="empty">No saved correlations for this diagnosis and selection.</td></tr>`;
+  const contextHeaders=['diagnosis_contrast','rank_by','batch_correction','threshold','strategy','outlier_removal'];
+  const contextValues=[contrast,isPair?primary:(rna?'rna':'protein'),state.correction,state.threshold,state.strategy,state.removal];
+  rankingExport.disabled=!rows.length;
+  rankingExport.onclick=()=>{
+    const columns=isPair?['cell_type','rna_module','protein_network','protein_module',...diagnosisFields.map(field=>'rna_'+field),
+      ...diagnosisFields.map(field=>'protein_'+field),'weighted_jaccard','jaccard_q','pair_record_id']:
+      ['context','module','module_record_id',...diagnosisFields,'best_pair_record_id','best_pair_rna_module','best_pair_protein_module','best_pair_weighted_jaccard'];
+    const values=isPair?rows.map(({pair,rna,protein})=>[pair.cellType,pair.transcript_module,pair.proteinSpecimen,pair.proteomics_module,...diagnosisValues(rna),
+      ...diagnosisValues(protein),pair.weighted_jaccard,pair.q,pair.recordId]):
+      rows.map(({context,module,recordId,estimate,pair})=>[context,module,recordId,...diagnosisValues(estimate),pair.recordId,pair.transcript_module,pair.proteomics_module,pair.weighted_jaccard]);
+    downloadCsv([...contextHeaders,...columns,...sharedGeneCsvColumns(isPair?'matched_shared_genes':'best_pair_matched_shared_genes')],
+      values.map((row,i)=>[...contextValues,...row,...sharedGeneCsvValues(rows[i].pair)]),`${view}_${contrast.replaceAll(' ','_')}`);
+  };
+}
+let rankingRevision=0,currentRanking;
+async function renderRanking(pairs,statistics){
+  currentRanking={pairs,statistics};
+  const revision=++rankingRevision,view=state.rankingView,contrast=state.diagnosisContrast,primary=state.diagnosisRankBy;
+  rankControls.rankBy.hidden=view!=='jaccard';
+  rankControls.diagnosisContrast.hidden=view==='jaccard';
+  rankControls.diagnosisRankBy.hidden=view!=='diagnosis-pairs';
+  if(view==='jaccard'){renderJaccardRanking(pairs,statistics);return}
+  rankingHeader.innerHTML='';
+  rankingBody.innerHTML='';
+  rankingExport.disabled=true;
+  rankingDescription.textContent='Loading saved diagnosis statistics…';
+  try{
+    const diagnosis=await loadDiagnosisIndex();
+    if(revision===rankingRevision)renderDiagnosisRanking(pairs,diagnosis,view,contrast,primary);
+  }catch(error){
+    if(revision===rankingRevision)rankingDescription.textContent=error.message;
+  }
+}
+for(const id of rankingControls){
+  rankControls[id].onchange=event=>{
+    state[id]=event.target.value;
+    if(currentRanking)renderRanking(currentRanking.pairs,currentRanking.statistics);
+  };
 }
 function renderPublication(statistics,correction,threshold){
   const publication=document.getElementById('permutationFigure');
@@ -146,25 +409,147 @@ function renderPublication(statistics,correction,threshold){
   ].filter(([suffix])=>statistics.files.includes(statistics.stem+suffix)&&(statistics.q_le_0p25>0||!suffix.startsWith('_candidate')));
   publication.innerHTML=`<span><b>Permutation bubble · CSF protein</b> · ${esc(correction)} · ${esc(threshold)} · ${statistics.module_pairs.toLocaleString()} tests · ${statistics.q_le_0p25} pairs with q ≤ 0.25</span><span class="publication-links">${links.map(([suffix,label])=>`<a class="action" target="_blank" href="${esc(folder+statistics.stem+suffix)}">${label}</a>`).join('')}</span>`;
 }
-function downloadCsv(pairs){
-  const columns=['batch_correction','cell_type','transcript_module','protein_specimen','proteomics_module','weighted_jaccard','plain_jaccard','shared_genes','permutation_p_value','bh_fdr_q_within_figure','transcript_module_genes','proteomics_module_genes','transcript_best','proteomics_best','reciprocal_best','record_id'];
-  const quote=value=>{const text=String(value??'');return /[",\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text};
-  const rows=pairs.map(pair=>[state.correction,pair.cellType,pair.transcript_module,pair.proteinSpecimen,pair.proteomics_module,pair.weighted_jaccard,pair.jaccard,pair.shared_genes,pair.p,pair.q,pair.transcript_module_genes,pair.proteomics_module_genes,pair.transcript_best,pair.proteomics_best,pair.reciprocal_best,pair.recordId]);
-  const blob=new Blob(['\ufeff'+[columns,...rows].map(row=>row.map(quote).join(',')).join('\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`${state.correction}_CSF_RNA_${state.proteinScope}_protein_${state.threshold}_${state.strategy}_${state.removal}_kME_weighted_Jaccard.csv`;link.click();URL.revokeObjectURL(link.href);
+function sharedGeneCsvColumns(matchColumn='matched_shared_genes'){
+  return hasSharedGeneFilter()?['shared_gene_filter','shared_gene_match',matchColumn]:[];
 }
-function render(){
-  renderControls();
-  const statistics=selectedStatistics(),recordsNow=selectedRecords(),pairs=selectedPairs(recordsNow,statistics);
-  const heatmap=renderHeatmap(recordsNow,pairs);
+function sharedGeneCsvValues(pair){
+  if(!hasSharedGeneFilter())return [];
+  const query=state.sharedGenes.join('; ');
+  return [/^[=+@-]/.test(query)?"'"+query:query,state.sharedGeneMode,pair.matchedSharedGenes.join('; ')];
+}
+function downloadJaccardCsv(pairs){
+  const columns=['batch_correction','cell_type','transcript_module','protein_specimen','proteomics_module','weighted_jaccard','plain_jaccard','shared_genes','permutation_p_value','bh_fdr_q_within_figure','transcript_module_genes','proteomics_module_genes','transcript_best','proteomics_best','reciprocal_best','record_id'];
+  const rows=pairs.map(pair=>[state.correction,pair.cellType,pair.transcript_module,pair.proteinSpecimen,pair.proteomics_module,pair.weighted_jaccard,pair.jaccard,pair.shared_genes,pair.p,pair.q,pair.transcript_module_genes,pair.proteomics_module_genes,pair.transcript_best,pair.proteomics_best,pair.reciprocal_best,pair.recordId]);
+  downloadCsv([...columns,...sharedGeneCsvColumns()],rows.map((row,i)=>[...row,...sharedGeneCsvValues(pairs[i])]),'kME_weighted_Jaccard');
+}
+function downloadCsv(columns,rows,suffix){
+  const quote=value=>{const text=String(value??'');return /[",\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text};
+  const blob=new Blob(['\ufeff'+[columns,...rows].map(row=>row.map(quote).join(',')).join('\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`${state.correction}_CSF_RNA_${state.proteinScope}_protein_${state.threshold}_${state.strategy}_${state.removal}_${suffix}.csv`;link.click();URL.revokeObjectURL(link.href);
+}
+function renderResults(recordsNow,pairs,statistics,maxValue,statusMessage=''){
+  const heatmap=renderHeatmap(recordsNow,pairs,maxValue,statusMessage);
   renderRanking(pairs,statistics);
   const correction=corrections.find(([value])=>value===state.correction)?.[1]||'';
   const threshold=thresholds.find(([value])=>value===state.threshold)?.[1],strategy=strategies.find(([value])=>value===state.strategy)?.[1],removal=removals.find(([value])=>value===state.removal)?.[1],proteinScope=proteinScopes.find(([value])=>value===state.proteinScope)?.[1];
   document.getElementById('matrixTitle').textContent=`All cell type–RNA modules × ${proteinScope} modules`;
   document.getElementById('summary').innerHTML=`<span><b>${esc(correction)}</b></span><span>RNA specimen <b>CSF</b></span><span>Protein network <b>${proteinScope}</b></span><span>Threshold <b>${threshold}</b></span><span>Features <b>${strategy}</b></span><span><b>${removal}</b></span><span>Cell types <b>${heatmap.cellCount}</b></span><span>RNA modules <b>${heatmap.rowCount}</b></span><span>Protein columns <b>${heatmap.proteinCount}</b></span><span>Module pairs <b>${pairs.length.toLocaleString()}</b></span>`;
   renderPublication(statistics,correction,threshold);
-  document.getElementById('rankBy').onchange=event=>{state.rankBy=event.target.value;renderRanking(pairs,statistics)};
-  document.getElementById('downloadCsv').onclick=()=>downloadCsv(rankedPairs(pairs,document.getElementById('rankBy').value));document.getElementById('downloadCsv').disabled=!pairs.length;
 }
+let searchRevision=0;
+async function render(){
+  const revision=++searchRevision,{sharedGenes:genes,sharedGeneMode:mode}=state;
+  renderControls();
+  syncDcMarkerButtons();
+  const statistics=selectedStatistics(),recordsNow=selectedRecords(),pairs=selectedPairs(recordsNow,statistics);
+  const maxValue=Math.max(0,...pairs.map(pair=>Number(pair.weighted_jaccard)||0));
+  const status=document.getElementById('sharedGeneStatus');
+  document.getElementById('clearSharedGene').hidden=!genes.length;
+  if(!genes.length){
+    status.textContent='';
+    renderResults(recordsNow,pairs,statistics,maxValue);
+    return;
+  }
+  const query=genes.length===1?genes[0]:`${mode} of ${genes.length} symbols`;
+  status.textContent=`Searching for ${query}…`;
+  renderResults(recordsNow,[],statistics,maxValue,'Searching saved module memberships…');
+  try{
+    const matches=await filterSharedGenes(pairs,genes,mode);
+    if(revision!==searchRevision)return;
+    status.textContent=`${matches.length.toLocaleString()} matching pairs for ${query}`;
+    renderResults(recordsNow,matches,statistics,maxValue,`No module pairs matched this shared gene search.`);
+  }catch(error){
+    if(revision!==searchRevision)return;
+    status.textContent='Shared gene search could not load the saved modules. Submit again to retry.';
+    renderResults(recordsNow,[],statistics,maxValue,error.message);
+  }
+}
+const sharedGeneInput=document.getElementById('sharedGene');
+const sharedGeneForm=document.getElementById('sharedGeneFilter');
+const sharedGeneMode=document.getElementById('sharedGeneMode');
+const dcMarkerGroups=[
+  ['Peripheral DCs',['S100A8','S100A9','VCAN']],
+  ['cDC2s',['AREG','CLEC10A']],
+  ['MRC1-high DCs',['MRC1']],
+  ['cDC1s',['FLT3','CLEC9A','XCR1','CADM1']],
+  ['ISG DCs',['IFITM1','IFITM3','ISG15']],
+  ['Migratory DCs',['AHR','CD207','LAMP3']],
+  ['AXL+ DCs',['AXL','SIGLEC6']],
+  ['ACY3+ DCs',['ACY3','IDO1']],
+];
+const dcPresetButtons=new Map();
+const dcMarkerContainer=document.getElementById('dcMarkerGroups');
+function registerDcMarkerToggle(button,genes){
+  dcPresetButtons.set(button,genes);
+  button.onclick=()=>{
+    const selected=new Set(parseSharedGenes(sharedGeneInput.value));
+    const remove=genes.every(gene=>selected.has(gene));
+    for(const gene of genes){
+      if(remove)selected.delete(gene);
+      else selected.add(gene);
+    }
+    sharedGeneInput.value=[...selected].join(', ');
+    submitSharedGenes();
+  };
+}
+registerDcMarkerToggle(document.getElementById('toggleAllDcMarkers'),dcMarkerGroups.flatMap(([,genes])=>genes));
+for(const [label,genes] of dcMarkerGroups){
+  const group=document.createElement('div');
+  group.className='gene-preset-group';
+  group.setAttribute('role','group');
+  group.setAttribute('aria-label',label);
+  const heading=document.createElement(genes.length===1?'span':'button');
+  heading.textContent=label;
+  if(genes.length>1){
+    heading.type='button';
+    heading.dataset.group='';
+    heading.title='Toggle all markers in '+label;
+    registerDcMarkerToggle(heading,genes);
+  }
+  const buttons=document.createElement('div');
+  buttons.className='button-row';
+  for(const gene of genes){
+    const button=document.createElement('button');
+    button.type='button';
+    button.textContent=gene;
+    registerDcMarkerToggle(button,[gene]);
+    buttons.appendChild(button);
+  }
+  group.append(heading,buttons);
+  dcMarkerContainer.appendChild(group);
+}
+function syncDcMarkerButtons(){
+  const selected=new Set(state.sharedGenes);
+  for(const [button,genes] of dcPresetButtons){
+    const count=genes.filter(gene=>selected.has(gene)).length;
+    button.setAttribute('aria-pressed',count===genes.length?'true':count?'mixed':'false');
+  }
+}
+function submitSharedGenes(){
+  state.sharedGenes=parseSharedGenes(sharedGeneInput.value);
+  state.sharedGeneMode=sharedGeneMode.value;
+  sharedGeneInput.value=state.sharedGenes.join(', ');
+  render();
+}
+sharedGeneForm.onsubmit=event=>{event.preventDefault();submitSharedGenes()};
+sharedGeneMode.onchange=()=>{if(sharedGeneInput.value||hasSharedGeneFilter())submitSharedGenes()};
+sharedGeneInput.onkeydown=event=>{
+  if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){
+    event.preventDefault();
+    sharedGeneForm.requestSubmit();
+  }
+};
+document.getElementById('clearSharedGene').onclick=()=>{
+  sharedGeneInput.value='';
+  state.sharedGenes=[];
+  render();
+  sharedGeneInput.focus();
+};
+sharedGeneInput.oninput=()=>{
+  if(!sharedGeneInput.value&&hasSharedGeneFilter()){
+    state.sharedGenes=[];
+    render();
+  }
+};
 render();
 </script>
 </body>
