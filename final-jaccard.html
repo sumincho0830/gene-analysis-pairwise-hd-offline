@@ -16,17 +16,11 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
 .gene-filter textarea,.gene-filter select{font:inherit;font-size:.88rem;max-width:100%;padding:7px 9px;border:1px solid var(--line);background:#fff;color:var(--ink)}
 .gene-filter textarea{display:block;width:min(320px,75vw);min-height:34px;resize:vertical}
 .ranking .matched-genes{max-width:270px;overflow-wrap:anywhere}
-.gene-presets{margin:14px 0 0;padding:10px 12px;border:1px solid var(--line)}
-.gene-preset-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-bottom:9px}
-.gene-preset-head h2{margin:0;font-size:.87rem;font-weight:700}
-.gene-preset-groups{display:flex;flex-wrap:wrap;gap:9px 15px}
-.gene-preset-group{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
-.gene-preset-group>span{padding:3px 0;font-size:.76rem;color:var(--muted)}
-.gene-preset-group .button-row{gap:3px}
-.gene-presets button{padding:4px 7px;font-size:.76rem}
-.gene-preset-group button[data-group]{border-color:transparent;padding-left:0}
-.gene-presets button[aria-pressed="true"],.gene-presets button[aria-pressed="mixed"]{background:var(--selected);border-color:#90aab8;font-weight:700}
-.gene-presets button[aria-pressed="mixed"]{border-style:dashed}
+.gene-search-field{position:relative}
+.gene-suggestions{position:absolute;z-index:9;top:100%;left:0;right:0;max-height:min(36vh,18rem);overflow:auto;list-style:none;margin:2px 0 0;padding:3px 0;border:1px solid var(--line);background:#fff;box-shadow:0 4px 10px #20272d16}
+.gene-suggestions[hidden]{display:none}
+.gene-suggestions [role="option"]{padding:5px 9px;font-size:.86rem;cursor:pointer}
+.gene-suggestions [role="option"]:hover,.gene-suggestions [aria-selected="true"]{background:var(--selected)}
 .gene-filter-status{align-self:center;font-size:.84rem;color:var(--muted)}
 .summary{display:flex;flex-wrap:wrap;gap:8px 22px;margin:16px 0;padding:11px 13px;border:1px solid var(--line);background:var(--soft);font-size:.87rem}.summary b{font-variant-numeric:tabular-nums}
 .note{padding:10px 13px;border-left:3px solid var(--warm);background:#fff8f4;color:#5c4437;font-size:.86rem;line-height:1.5;margin-bottom:18px}
@@ -52,21 +46,16 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
     <div><span class="control-label">Outlier removal</span><div class="button-row" id="removalControls"></div></div>
   </section>
   <form class="gene-filter" id="sharedGeneFilter" role="search">
-    <div><label for="sharedGene">Shared gene symbols</label>
-      <textarea id="sharedGene" rows="1" placeholder="e.g. STAT1, MX1, ISG15" autocomplete="off" spellcheck="false"></textarea></div>
+    <div class="gene-search-field"><label for="sharedGene">Shared gene symbols</label>
+      <textarea id="sharedGene" rows="1" placeholder="Type a gene prefix, e.g. S" autocomplete="off" spellcheck="false"
+        aria-autocomplete="list" aria-controls="sharedGeneSuggestions"></textarea>
+      <ul class="gene-suggestions" id="sharedGeneSuggestions" role="listbox" aria-label="Gene symbol suggestions" hidden></ul></div>
     <div><label for="sharedGeneMode">Match</label>
       <select id="sharedGeneMode"><option value="any">Any gene</option><option value="all">All genes</option></select></div>
     <button type="submit">Filter pairs</button>
     <button type="button" id="clearSharedGene" hidden>Clear</button>
     <span class="gene-filter-status" id="sharedGeneStatus" role="status"></span>
   </form>
-  <section id="dcMarkerPresets" class="gene-presets" aria-labelledby="dcMarkerTitle">
-    <div class="gene-preset-head">
-      <h2 id="dcMarkerTitle">DC marker presets</h2>
-      <button type="button" id="toggleAllDcMarkers">All 20 markers</button>
-    </div>
-    <div class="gene-preset-groups" id="dcMarkerGroups"></div>
-  </section>
   <div class="summary" id="summary"></div>
   <div class="note" id="statisticalStatus"></div>
   <div class="publication" id="permutationFigure" hidden></div>
@@ -92,6 +81,7 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
   </div>
   <div class="table-wrap"><table class="ranking"><thead><tr id="rankingHeader"><th>#</th><th>Cell type</th><th>RNA module</th><th>Protein network</th><th>Protein module</th><th>Weighted Jaccard</th><th>Plain Jaccard</th><th>Shared genes</th><th>Permutation p</th><th>BH-FDR q</th><th>Best-match status</th><th>Genes</th></tr></thead><tbody id="ranking"></tbody></table></div>
 </main>
+<script src="module-members/gene-suggestions.js"></script>
 <script src="cross-omics-overlap/overlap-index.js"></script>
 <script src="figures/final_jaccard_bubble/viewer-statistics.js"></script>
 <script src="figures/final_jaccard_bubble/combat_v2/viewer-statistics.js"></script>
@@ -439,7 +429,6 @@ let searchRevision=0;
 async function render(){
   const revision=++searchRevision,{sharedGenes:genes,sharedGeneMode:mode}=state;
   renderControls();
-  syncDcMarkerButtons();
   const statistics=selectedStatistics(),recordsNow=selectedRecords(),pairs=selectedPairs(recordsNow,statistics);
   const maxValue=Math.max(0,...pairs.map(pair=>Number(pair.weighted_jaccard)||0));
   const status=document.getElementById('sharedGeneStatus');
@@ -466,85 +455,94 @@ async function render(){
 const sharedGeneInput=document.getElementById('sharedGene');
 const sharedGeneForm=document.getElementById('sharedGeneFilter');
 const sharedGeneMode=document.getElementById('sharedGeneMode');
-const dcMarkerGroups=[
-  ['Peripheral DCs',['S100A8','S100A9','VCAN']],
-  ['cDC2s',['AREG','CLEC10A']],
-  ['MRC1-high DCs',['MRC1']],
-  ['cDC1s',['FLT3','CLEC9A','XCR1','CADM1']],
-  ['ISG DCs',['IFITM1','IFITM3','ISG15']],
-  ['Migratory DCs',['AHR','CD207','LAMP3']],
-  ['AXL+ DCs',['AXL','SIGLEC6']],
-  ['ACY3+ DCs',['ACY3','IDO1']],
-];
-const dcPresetButtons=new Map();
-const dcMarkerContainer=document.getElementById('dcMarkerGroups');
-function registerDcMarkerToggle(button,genes){
-  dcPresetButtons.set(button,genes);
-  button.onclick=()=>{
-    const selected=new Set(parseSharedGenes(sharedGeneInput.value));
-    const remove=genes.every(gene=>selected.has(gene));
-    for(const gene of genes){
-      if(remove)selected.delete(gene);
-      else selected.add(gene);
-    }
-    sharedGeneInput.value=[...selected].join(', ');
-    submitSharedGenes();
-  };
+const sharedGeneSuggestions=document.getElementById('sharedGeneSuggestions');
+const geneSymbols=window.MODULE_GENE_SUGGESTIONS||[];
+let activeSuggestion=-1;
+function closeGeneSuggestions(){
+  sharedGeneSuggestions.hidden=true;
+  sharedGeneInput.removeAttribute('aria-activedescendant');
+  activeSuggestion=-1;
 }
-registerDcMarkerToggle(document.getElementById('toggleAllDcMarkers'),dcMarkerGroups.flatMap(([,genes])=>genes));
-for(const [label,genes] of dcMarkerGroups){
-  const group=document.createElement('div');
-  group.className='gene-preset-group';
-  group.setAttribute('role','group');
-  group.setAttribute('aria-label',label);
-  const heading=document.createElement(genes.length===1?'span':'button');
-  heading.textContent=label;
-  if(genes.length>1){
-    heading.type='button';
-    heading.dataset.group='';
-    heading.title='Toggle all markers in '+label;
-    registerDcMarkerToggle(heading,genes);
-  }
-  const buttons=document.createElement('div');
-  buttons.className='button-row';
-  for(const gene of genes){
-    const button=document.createElement('button');
-    button.type='button';
-    button.textContent=gene;
-    registerDcMarkerToggle(button,[gene]);
-    buttons.appendChild(button);
-  }
-  group.append(heading,buttons);
-  dcMarkerContainer.appendChild(group);
+function geneTokenAtCaret(){
+  const value=sharedGeneInput.value,caret=sharedGeneInput.selectionStart;
+  const left=value.slice(0,caret).match(/[^\s,;]*$/u)[0];
+  const right=value.slice(caret).match(/^[^\s,;]*/u)[0];
+  return {start:caret-left.length,end:caret+right.length,prefix:normalizeGene(left)};
 }
-function syncDcMarkerButtons(){
-  const selected=new Set(state.sharedGenes);
-  for(const [button,genes] of dcPresetButtons){
-    const count=genes.filter(gene=>selected.has(gene)).length;
-    button.setAttribute('aria-pressed',count===genes.length?'true':count?'mixed':'false');
-  }
+function showGeneSuggestions(){
+  const {start,end,prefix}=geneTokenAtCaret();
+  if(!prefix){closeGeneSuggestions();return}
+  const value=sharedGeneInput.value,otherSymbols=new Set(parseSharedGenes(value.slice(0,start)+' '+value.slice(end)));
+  const matches=geneSymbols.filter(gene=>gene.startsWith(prefix)&&!otherSymbols.has(gene));
+  if(!matches.length){closeGeneSuggestions();return}
+  sharedGeneSuggestions.innerHTML=matches.map((gene,i)=>`<li role="option" id="sharedGeneOption${i}" aria-selected="false">${esc(gene)}</li>`).join('');
+  activeSuggestion=-1;
+  sharedGeneInput.removeAttribute('aria-activedescendant');
+  sharedGeneSuggestions.hidden=false;
+  sharedGeneSuggestions.scrollTop=0;
 }
+function moveGeneSuggestion(step){
+  const options=sharedGeneSuggestions.children;
+  if(activeSuggestion>=0)options[activeSuggestion].setAttribute('aria-selected','false');
+  activeSuggestion=activeSuggestion<0?(step>0?0:options.length-1):
+    (activeSuggestion+step+options.length)%options.length;
+  const option=options[activeSuggestion];
+  option.setAttribute('aria-selected','true');
+  sharedGeneInput.setAttribute('aria-activedescendant',option.id);
+  option.scrollIntoView({block:'nearest'});
+}
+function selectGeneSuggestion(gene){
+  const {start,end}=geneTokenAtCaret();
+  const suffix=end===sharedGeneInput.value.length?', ':'';
+  sharedGeneInput.setRangeText(gene+suffix,start,end,'end');
+  closeGeneSuggestions();
+  sharedGeneInput.focus();
+}
+sharedGeneSuggestions.onmousedown=event=>{if(event.target.closest('[role="option"]'))event.preventDefault()};
+sharedGeneSuggestions.onclick=event=>{
+  const option=event.target.closest('[role="option"]');
+  if(option)selectGeneSuggestion(option.textContent);
+};
+sharedGeneInput.onblur=closeGeneSuggestions;
+sharedGeneInput.onclick=showGeneSuggestions;
 function submitSharedGenes(){
   state.sharedGenes=parseSharedGenes(sharedGeneInput.value);
   state.sharedGeneMode=sharedGeneMode.value;
   sharedGeneInput.value=state.sharedGenes.join(', ');
+  closeGeneSuggestions();
   render();
 }
 sharedGeneForm.onsubmit=event=>{event.preventDefault();submitSharedGenes()};
 sharedGeneMode.onchange=()=>{if(sharedGeneInput.value||hasSharedGeneFilter())submitSharedGenes()};
 sharedGeneInput.onkeydown=event=>{
-  if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){
+  if(event.isComposing)return;
+  if(!sharedGeneSuggestions.hidden){
+    if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+      event.preventDefault();
+      moveGeneSuggestion(event.key==='ArrowDown'?1:-1);
+      return;
+    }
+    if(event.key==='Escape'){
+      event.preventDefault();
+      closeGeneSuggestions();
+      return;
+    }
+  }
+  if(event.key==='Enter'&&!event.shiftKey){
     event.preventDefault();
-    sharedGeneForm.requestSubmit();
+    if(activeSuggestion>=0)selectGeneSuggestion(sharedGeneSuggestions.children[activeSuggestion].textContent);
+    else sharedGeneForm.requestSubmit();
   }
 };
 document.getElementById('clearSharedGene').onclick=()=>{
   sharedGeneInput.value='';
+  closeGeneSuggestions();
   state.sharedGenes=[];
   render();
   sharedGeneInput.focus();
 };
 sharedGeneInput.oninput=()=>{
+  showGeneSuggestions();
   if(!sharedGeneInput.value&&hasSharedGeneFilter()){
     state.sharedGenes=[];
     render();

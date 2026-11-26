@@ -496,6 +496,10 @@ def refresh_release_checksums(output_root: Path) -> dict[str, Any]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     hash_paths = release_hash_paths(output_root)
     manifest["release_files"] = len(hash_paths) + 1
+    manifest["module_member_files"] = sum(
+        path.relative_to(output_root).parts[0] == "module-members"
+        for path in hash_paths
+    )
     manifest["cross_omics_overlap_files"] = sum(
         path.relative_to(output_root).parts[0] == "cross-omics-overlap"
         for path in hash_paths
@@ -512,8 +516,9 @@ def refresh_final_jaccard(run_root: Path, output_root: Path) -> dict[str, Any]:
     dashboard_root = run_root / "dashboard"
     copy_final_jaccard_assets(dashboard_root, output_root)
     copy_overlap_assets(dashboard_root, output_root)
-    relative = Path("module-members/cross-omics-view.js")
-    copy_verified(dashboard_root / relative, output_root / relative)
+    for filename in ("cross-omics-view.js", "gene-suggestions.js"):
+        relative = Path("module-members") / filename
+        copy_verified(dashboard_root / relative, output_root / relative)
 
     data_path = output_root / "dashboard-data.js"
     bundle = read_dashboard_bundle(data_path)

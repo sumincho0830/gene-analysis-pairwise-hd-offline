@@ -1957,6 +1957,35 @@ def build_module_member_shards(
     }
 
 
+def build_module_gene_suggestions(dashboard_root: Path) -> int:
+    """Index assigned RNA and protein gene symbols for offline autocomplete."""
+    member_root = dashboard_root / "module-members"
+    index_text = (member_root / "module-member-index.js").read_text(encoding="utf-8")
+    records = json.loads(index_text.split("=", 1)[1].strip().removesuffix(";"))["records"]
+    symbols: set[str] = set()
+    for record_id, record in records.items():
+        proteomics = record_id.startswith("proteomics::")
+        for module in record["modules"].values():
+            if module["fully_raw_unassigned"]:
+                continue
+            shard = (dashboard_root / module["path"]).read_text(encoding="utf-8")
+            rows = json.loads(shard.split("]=", 1)[1].strip().removesuffix(";"))["rows"]
+            for row in rows:
+                if row[8]:
+                    continue
+                value = row[2] if proteomics else (row[1] or row[2] or row[0])
+                symbol = str(value or "").strip().upper()
+                if symbol not in {"", "---", "NA", "NAN"} and not any(c in symbol for c in "|;,/"):
+                    symbols.add(symbol)
+    (member_root / "gene-suggestions.js").write_text(
+        "window.MODULE_GENE_SUGGESTIONS="
+        + json.dumps(sorted(symbols), ensure_ascii=False, separators=(",", ":"))
+        + ";\n",
+        encoding="utf-8",
+    )
+    return len(symbols)
+
+
 def build_cross_omics_overlap_shards(
     records: list[dict[str, Any]], dashboard_root: Path
 ) -> dict[str, Any]:
@@ -2213,6 +2242,7 @@ def build(run_root: Path, combat_v2_run_root: Path | None = None) -> None:
     ]
     validate_records(records, dashboard_root)
     module_members = build_module_member_shards(records, dashboard_root)
+    build_module_gene_suggestions(dashboard_root)
     cross_omics_overlap = build_cross_omics_overlap_shards(records, dashboard_root)
     bundle = {
         "schema_version": SCHEMA_VERSION,
