@@ -27,6 +27,9 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
 .publication{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 13px;border:1px solid var(--line);background:#fff;margin-bottom:18px;font-size:.86rem}.publication-links{display:flex;gap:7px;flex-wrap:wrap}.publication b{font-weight:700}
 .publication[hidden],.note[hidden]{display:none}.actions select{font:inherit;font-size:.88rem;border:1px solid var(--line);padding:6px 8px;background:#fff;color:var(--ink)}
 .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin:26px 0 9px}.section-head h2{font-size:1.08rem;font-weight:600;margin:0}.section-head p{font-size:.82rem}.actions{display:flex;gap:7px;flex-wrap:wrap}
+.heatmap-export{align-items:flex-end;margin:0 0 9px}
+.heatmap-export label{display:grid;gap:4px;font-size:.82rem;font-weight:600}
+.heatmap-export output{align-self:center;color:var(--muted);font-size:.82rem}
 .ranking-controls{margin-bottom:9px}.ranking-controls select[hidden]{display:none}
 .heatmap-wrap{border:1px solid var(--line);max-height:68vh;overflow:auto;background:#fff}.heatmap{border-collapse:separate;border-spacing:0;font-size:.73rem}.heatmap th,.heatmap td{padding:0;border-right:1px solid #edf0f2;border-bottom:1px solid #edf0f2;white-space:nowrap;text-align:center}
 .heatmap thead th{position:sticky;top:0;z-index:4;background:#fff;height:115px;vertical-align:bottom;padding:5px}.heatmap thead th.rotate>span{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:105px}.heatmap th.row-label{position:sticky;left:0;z-index:2;background:#fff;text-align:left;padding:4px 8px;min-width:225px;font-weight:400}.heatmap tr.cell-start th.row-label{border-top:2px solid #87949c;font-weight:700}.heatmap td{padding:2px}.heatmap a{display:block;min-width:45px;padding:4px 3px;color:#172027;text-decoration:none;font-variant-numeric:tabular-nums;border:1px solid transparent}.heatmap a.high{color:#fff}.heatmap a.reciprocal{border-color:#101820;font-weight:700}.heatmap a:hover,.heatmap a:focus{outline:2px solid var(--warm);outline-offset:-2px;position:relative;z-index:1}
@@ -87,6 +90,17 @@ button,.action{font:inherit;font-size:.88rem;padding:7px 11px;border:1px solid v
   <div class="publication" id="permutationFigure" hidden></div>
   <div class="publication" id="v1HeatmapFigure" hidden><span><b>Publication heatmap</b> · ComBat v1 · 5 cells</span><span class="publication-links"><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.png">PNG</a><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.pdf">PDF</a><a class="action" target="_blank" href="figures/final_jaccard/CSF_threshold_5_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard.svg">SVG</a></span></div>
   <div class="section-head"><div><h2 id="matrixTitle">All cell type–RNA modules × CSF and PB protein modules</h2><p>Rows are grouped by cell type. Click a value to inspect shared, RNA-only, and protein-only genes without leaving this page.</p></div><div class="legend"><span>0</span><span class="gradient"></span><span id="legendMax">max</span></div></div>
+  <form class="actions heatmap-export" id="heatmapExport">
+    <label>CSV scope<select id="heatmapCsvScope"><option value="">All cell types · displayed layout</option></select></label>
+    <label>CSV values<select id="heatmapCsvMetric">
+      <option value="weighted_jaccard">kME-weighted Jaccard</option>
+      <option value="permutation_p">Permutation p</option>
+      <option value="bh_fdr_q">BH-FDR q</option>
+      <option value="permutation_p_lt_0p05">Permutation p · only p &lt; 0.05</option>
+    </select></label>
+    <button type="submit" id="downloadHeatmapCsv" disabled>Download heatmap CSV</button>
+    <output id="heatmapCsvStatus" aria-live="polite"></output>
+  </form>
   <div class="heatmap-wrap" id="heatmap"></div>
   <div class="section-head"><div><h2>Module ranking</h2><p id="rankingDescription" role="status"></p></div></div>
   <div class="actions ranking-controls">
@@ -266,19 +280,20 @@ function renderHeatmap(recordsNow,pairs,maxValue,statusMessage){
     recordsNow=recordsNow.filter(item=>rowModules.has(item.dimensions.transcriptRecordId));
   }
   const pairMap=new Map(pairs.map(pair=>[`${pair.transcriptRecordId}\u0000${pair.transcript_module}\u0000${pair.proteinSpecimen}\u0000${pair.proteomics_module}`,pair]));
+  const getPair=({item,module},protein)=>pairMap.get(`${item.dimensions.transcriptRecordId}\u0000${module}\u0000${protein.specimen}\u0000${protein.module}`);
   const proteinColumns=[...new Map(pairs.map(pair=>[`${pair.proteinSpecimen}\u0000${pair.proteomics_module}`,{specimen:pair.proteinSpecimen,module:pair.proteomics_module}])).values()].sort((a,b)=>a.specimen.localeCompare(b.specimen)||a.module.localeCompare(b.module));
   document.getElementById('legendMax').textContent=maxValue.toFixed(3);
   const transcriptGroups=[...new Map(recordsNow.map(item=>[item.dimensions.transcriptRecordId,item])).values()];
   const rows=[];for(const item of transcriptGroups){
     const modules=[...(hasSharedGeneFilter()?rowModules.get(item.dimensions.transcriptRecordId):
       new Set(recordsNow.filter(candidate=>candidate.dimensions.transcriptRecordId===item.dimensions.transcriptRecordId).flatMap(candidate=>candidate.entry.transcript_modules)))];
-    const moduleMax=new Map(modules.map(module=>[module,Math.max(0,...proteinColumns.map(protein=>Number(pairMap.get(`${item.dimensions.transcriptRecordId}\u0000${module}\u0000${protein.specimen}\u0000${protein.module}`)?.weighted_jaccard)||0))]));
+    const moduleMax=new Map(modules.map(module=>[module,Math.max(0,...proteinColumns.map(protein=>Number(getPair({item,module},protein)?.weighted_jaccard)||0))]));
     modules.sort((a,b)=>moduleMax.get(b)-moduleMax.get(a)||a.localeCompare(b)).forEach((module,index)=>rows.push({item,module,cellStart:index===0}));
   }
   const header=proteinColumns.map(protein=>`<th class="rotate"><span>${state.proteinScope==='all'?`${esc(protein.specimen)} · `:''}${esc(protein.module)}</span></th>`).join('');
-  const body=rows.map(({item,module,cellStart})=>`<tr class="${cellStart?'cell-start':''}"><th class="row-label">${esc(pretty(item.dimensions.cellType))} · ${esc(module)}</th>${proteinColumns.map(protein=>{const pair=pairMap.get(`${item.dimensions.transcriptRecordId}\u0000${module}\u0000${protein.specimen}\u0000${protein.module}`);if(!pair)return hasSharedGeneFilter()?'<td></td>':'<td>NA</td>';const value=Number(pair.weighted_jaccard)||0,intensity=maxValue?value/maxValue:0,alpha=(.05+.9*intensity).toFixed(3),marker=pair.reciprocal_best?'★':pair.transcript_best?'•':'';return `<td><a target="_top" href="${esc(deepLink(pair))}" class="${intensity>.68?'high':''} ${pair.reciprocal_best?'reciprocal':''}" style="background:rgba(31,100,133,${alpha})" title="${esc(pretty(item.dimensions.cellType))} ${esc(module)} × ${esc(protein.specimen)} protein ${esc(protein.module)}; weighted Jaccard ${value.toFixed(4)}${pair.matchedSharedGenes?'; matching genes '+esc(matchedGeneText(pair)):''}">${value.toFixed(3)}${marker}</a></td>`}).join('')}</tr>`).join('');
+  const body=rows.map(({item,module,cellStart})=>`<tr class="${cellStart?'cell-start':''}"><th class="row-label">${esc(pretty(item.dimensions.cellType))} · ${esc(module)}</th>${proteinColumns.map(protein=>{const pair=getPair({item,module},protein);if(!pair)return hasSharedGeneFilter()?'<td></td>':'<td>NA</td>';const value=Number(pair.weighted_jaccard)||0,intensity=maxValue?value/maxValue:0,alpha=(.05+.9*intensity).toFixed(3),marker=pair.reciprocal_best?'★':pair.transcript_best?'•':'';return `<td><a target="_top" href="${esc(deepLink(pair))}" class="${intensity>.68?'high':''} ${pair.reciprocal_best?'reciprocal':''}" style="background:rgba(31,100,133,${alpha})" title="${esc(pretty(item.dimensions.cellType))} ${esc(module)} × ${esc(protein.specimen)} protein ${esc(protein.module)}; weighted Jaccard ${value.toFixed(4)}${pair.matchedSharedGenes?'; matching genes '+esc(matchedGeneText(pair)):''}">${value.toFixed(3)}${marker}</a></td>`}).join('')}</tr>`).join('');
   document.getElementById('heatmap').innerHTML=rows.length?`<table class="heatmap"><thead><tr><th class="row-label">Cell type · RNA module</th>${header}</tr></thead><tbody>${body}</tbody></table>`:`<div class="empty">${esc(statusMessage||'No saved Jaccard results for this condition.')}</div>`;
-  return {rowCount:rows.length,proteinCount:proteinColumns.length,maxValue,cellCount:transcriptGroups.length};
+  return {rows,proteinColumns,getPair,rowCount:rows.length,proteinCount:proteinColumns.length,cellCount:transcriptGroups.length};
 }
 function rankedPairs(pairs,rankBy){
   const bySimilarity=(a,b)=>Number(b.weighted_jaccard||0)-Number(a.weighted_jaccard||0)||a.cellType.localeCompare(b.cellType)||a.transcript_module.localeCompare(b.transcript_module);
@@ -448,8 +463,97 @@ function downloadCsv(columns,rows,suffix){
   const quote=value=>{const text=String(value??'');return /[",\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text};
   const blob=new Blob(['\ufeff'+[columns,...rows].map(row=>row.map(quote).join(',')).join('\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`${state.correction}_CSF_RNA_${state.proteinScope}_protein_${state.threshold}_${state.strategy}_${state.removal}_${suffix}.csv`;link.click();URL.revokeObjectURL(link.href);
 }
+const heatmapExport=document.getElementById('heatmapExport');
+const heatmapCsvScope=document.getElementById('heatmapCsvScope');
+const heatmapCsvMetric=document.getElementById('heatmapCsvMetric');
+const heatmapCsvStatus=document.getElementById('heatmapCsvStatus');
+const heatmapCsvButton=document.getElementById('downloadHeatmapCsv');
+let activeHeatmapExport;
+function scatterPermutationLookup(){
+  if(state.proteinScope==='PB'||state.strategy!=='02_hvg_top9000')return new Map();
+  const scatter=Object.values(window.FINAL_JACCARD_SCATTER_DATA||{}).find(entry=>
+    entry.correction===state.correction&&entry.cells===Number(state.threshold.split('_')[1])&&
+    entry.afterOutlier===(state.removal==='after'));
+  return new Map((scatter?.points||[]).map(([index,rna,protein,,p,q])=>
+    [pairKey(scatter.records[index][0],rna,protein),{p,q}]));
+}
+function configureHeatmapExport(matrix,pairs,statistics){
+  const previousCell=heatmapCsvScope.value;
+  const cellTypes=[...new Set(matrix.rows.map(row=>row.item.dimensions.cellType))];
+  while(heatmapCsvScope.options.length>1)heatmapCsvScope.remove(1);
+  for(const cell of cellTypes)heatmapCsvScope.add(new Option(pretty(cell),cell));
+  if(cellTypes.includes(previousCell))heatmapCsvScope.value=previousCell;
+  const permutationLookup=statistics?new Map():scatterPermutationLookup();
+  const permutation=pair=>pair?.proteinSpecimen==='CSF'
+    ? {p:pair.p,q:pair.q,...permutationLookup.get(pairKey(pair.recordId,pair.transcript_module,pair.proteomics_module))}
+    : pair;
+  activeHeatmapExport={matrix,pairs,permutation};
+  updateHeatmapExport();
+}
+function updateHeatmapExport(){
+  const {pairs,permutation}=activeHeatmapExport;
+  const cell=heatmapCsvScope.value;
+  const hasPermutation=pairs.some(pair=>(!cell||pair.cellType===cell)&&Number.isFinite(permutation(pair).p));
+  heatmapCsvScope.disabled=!pairs.length;
+  heatmapCsvMetric.disabled=!pairs.length;
+  heatmapCsvButton.disabled=!pairs.length;
+  for(const option of heatmapCsvMetric.options)option.disabled=option.index>0&&!hasPermutation;
+  if(!hasPermutation)heatmapCsvMetric.value='weighted_jaccard';
+  heatmapCsvStatus.textContent=pairs.length
+    ? (cell?'Protein rows × RNA columns, ordered by module size.':'Matches the displayed row and column order.')+
+      (hasPermutation?(state.proteinScope==='all'?' Permutation p and q are available for CSF protein pairs only.':'')
+        :' No saved permutation p or q for these pairs.')
+    : '';
+}
+function heatmapValue(pair,metric,permutation){
+  if(!pair)return '';
+  if(metric==='weighted_jaccard')return pair.weighted_jaccard;
+  const {p,q}=permutation(pair);
+  if(metric==='bh_fdr_q')return q;
+  if(metric==='permutation_p')return p;
+  return p<0.05?p:'';
+}
+function assignedModuleSize(recordId,module){
+  const info=window.MODULE_MEMBER_INDEX?.records[recordId]?.modules[module];
+  return info?info.count-(info.raw_unassigned_count||0):-1;
+}
+async function downloadHeatmap(event){
+  event.preventDefault();
+  const selection=activeHeatmapExport,{matrix,pairs,permutation}=selection;
+  const cell=heatmapCsvScope.value,metric=heatmapCsvMetric.value;
+  const {rows,proteinColumns,getPair}=matrix;
+  const proteinLabel=protein=>state.proteinScope==='all'?`${protein.specimen}::${protein.module}`:protein.module;
+  const value=(row,protein)=>heatmapValue(getPair(row,protein),metric,permutation);
+  if(!cell){
+    downloadCsv(['cell_type','rna_module',...proteinColumns.map(proteinLabel)],
+      rows.map(row=>[row.item.dimensions.cellType,row.module,...proteinColumns.map(protein=>value(row,protein))]),
+      `heatmap_all_cells_${metric}`);
+    return;
+  }
+  heatmapCsvButton.disabled=true;
+  try{
+    await loadMemberIndexes();
+    if(selection!==activeHeatmapExport||cell!==heatmapCsvScope.value||metric!==heatmapCsvMetric.value)return;
+    const rnaSize=row=>assignedModuleSize(row.item.dimensions.transcriptRecordId,row.module);
+    const rnaRows=rows.filter(row=>row.item.dimensions.cellType===cell)
+      .sort((a,b)=>rnaSize(b)-rnaSize(a)||a.module.localeCompare(b.module));
+    const proteinIds=new Map(pairs.map(pair=>[pair.proteinSpecimen,pair.proteinRecordId]));
+    const proteinSize=protein=>assignedModuleSize(proteinIds.get(protein.specimen),protein.module);
+    const proteins=[...proteinColumns].sort((a,b)=>a.specimen.localeCompare(b.specimen)||proteinSize(b)-proteinSize(a)||a.module.localeCompare(b.module));
+    downloadCsv(['protein_module',...rnaRows.map(row=>row.module)],
+      proteins.map(protein=>[proteinLabel(protein),...rnaRows.map(row=>value(row,protein))]),
+      `heatmap_${cell}_${metric}`);
+  }catch{
+    heatmapCsvStatus.textContent='Could not load module sizes. Try downloading again.';
+  }finally{
+    if(selection===activeHeatmapExport)heatmapCsvButton.disabled=false;
+  }
+}
+heatmapCsvScope.addEventListener('change',updateHeatmapExport);
+heatmapExport.addEventListener('submit',downloadHeatmap);
 function renderResults(recordsNow,pairs,statistics,maxValue,statusMessage=''){
   const heatmap=renderHeatmap(recordsNow,pairs,maxValue,statusMessage);
+  configureHeatmapExport(heatmap,pairs,statistics);
   renderRanking(pairs,statistics);
   const correction=corrections.find(([value])=>value===state.correction)?.[1]||'';
   const threshold=thresholds.find(([value])=>value===state.threshold)?.[1],strategy=strategies.find(([value])=>value===state.strategy)?.[1],removal=removals.find(([value])=>value===state.removal)?.[1],proteinScope=proteinScopes.find(([value])=>value===state.proteinScope)?.[1];

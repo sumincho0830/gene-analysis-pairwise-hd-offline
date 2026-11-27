@@ -9,6 +9,7 @@
   const maxJaccard = .25;
   const perPage = 50;
   const highlightCount = 25;
+  const outlierLabel = dataset => dataset.afterOutlier ? "After outlier removal" : "Before outlier removal";
   const xPosition = value => bounds.left + value / maxJaccard * (bounds.right - bounds.left);
   const yPosition = value => bounds.bottom - value / maxLogP * (bounds.bottom - bounds.top);
   const pText = value => value < .001 ? value.toExponential(2) : String(Number(value.toPrecision(3)));
@@ -51,7 +52,7 @@
       svgNode("text", { x: 23, y: 26, class: "scatter-title" },
         `${dataset.label} · ${dataset.cells} cells · HVG 9,000`),
       svgNode("text", { x: 23, y: 46, class: "scatter-subtitle" },
-        "CSF RNA × CSF protein · Before common outlier removal · Other excluded"),
+        `CSF RNA × CSF protein · ${dataset.afterOutlier ? "After" : "Before"} common outlier removal · Other excluded`),
       svgNode("circle", { cx: 27, cy: 70, r: 4, fill: "#9ba1ab", opacity: .6 }),
       svgNode("text", { x: 39, y: 74 }, "Above p cutoff"),
       svgNode("circle", { cx: 165, cy: 70, r: 4, fill: "#58aae8" }),
@@ -149,7 +150,8 @@
     const blob = new Blob([new XMLSerializer().serializeToString(copy)], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(blob), link = document.createElement("a");
     link.href = url;
-    link.download = `${dataset.stem}_hvg9000_before_outlier_permutation_scatter.svg`;
+    const branch = dataset.afterOutlier ? "after_outlier" : "before_outlier";
+    link.download = `${dataset.stem}_hvg9000_${branch}_permutation_scatter.svg`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -181,11 +183,18 @@
     const slider = get("#scatterPThreshold"), pValue = get("#scatterPValue");
     const plotContainer = get("#scatterPlot"), conditions = get("[data-conditions]");
     const prev = get("[data-prev]"), next = get("[data-next]");
-    let dataset, plot, correction, cutoff, eligible = [], page = 0, frame = null;
-    conditions.innerHTML = Object.entries(datasets).map(([key, data]) =>
-      `<button type="button" data-correction="${key}">${data.label} · ${data.cells} cells</button>`).join("");
+    let dataset, plot, conditionKey, cutoff, eligible = [], page = 0, frame = null;
+    const entries = Object.entries(datasets);
+    const previousCondition = new Map();
+    conditions.innerHTML = entries.map(([key, data]) =>
+      `<button type="button" data-condition="${esc(key)}">${esc(data.label)} · ${data.cells} cells · ${outlierLabel(data)}</button>`).join("");
     const buttons = [...conditions.querySelectorAll("button")];
-    buttons.forEach(button => { button.onclick = () => onCorrection(button.dataset.correction); });
+    buttons.forEach(button => {
+      button.onclick = () => {
+        setCondition(button.dataset.condition);
+        onCorrection(dataset.correction);
+      };
+    });
 
     function renderPairs() {
       const start = page * perPage, end = Math.min(start + perPage, eligible.length);
@@ -240,12 +249,13 @@
       if (frame === null) frame = requestAnimationFrame(applyCutoff);
     }
 
-    function setCorrection(key) {
-      if (correction === key || !datasets[key]) return;
+    function setCondition(key) {
+      if (conditionKey === key) return;
       dataset = datasets[key];
-      correction = key;
+      conditionKey = key;
+      previousCondition.set(dataset.correction, key);
       buttons.forEach(button => {
-        const selected = button.dataset.correction === key;
+        const selected = button.dataset.condition === key;
         button.classList.toggle("active", selected);
         button.setAttribute("aria-pressed", selected);
       });
@@ -269,6 +279,16 @@
       };
       get("[data-csv]").href = dataset.csv;
       applyCutoff();
+    }
+
+    function setCorrection(correction) {
+      const key = previousCondition.get(correction) || entries.find(([, data]) => data.correction === correction)?.[0];
+      if (key) {
+        setCondition(key);
+      } else if (!conditionKey && entries.length) {
+        setCondition(entries[0][0]);
+        onCorrection(dataset.correction);
+      }
     }
 
     get("#scatterPairs").onclick = event => {

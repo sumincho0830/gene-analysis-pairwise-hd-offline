@@ -16,6 +16,17 @@ start index.html
 비교할 수 있습니다. **Individual run inspection**과 review CSV import/export도
 로컬 dashboard와 동일하게 유지됩니다.
 
+## Final Jaccard Similarity
+
+Heatmap에서 화면에 표시된 전체 행렬과 셀 타입별 행렬을 CSV로 내려받을 수 있습니다.
+Permutation scatter에서는 p cutoff를 조절하고 해당 화면의 SVG와 원본 CSV를 받을 수 있습니다.
+
+ComBat v1 · 최소 10세포 · HVG 9,000 · outlier 제거 후 · CSF RNA × CSF protein 결과
+
+- [Permutation scatter SVG](figures/final_jaccard_scatter/combat_v1_10_cells_hvg9000_after_outlier_permutation_scatter.svg)
+- [전체 3,060쌍의 통계 CSV](figures/final_jaccard_scatter/CSF_threshold_10_cells_hvg_top9000_after_outlier_kME_weighted_Jaccard_permutation_bubble_statistics.csv)
+- [Supplementary Figure용 셀 타입별 heatmap CSV ZIP](figures/final_jaccard/ComBat_v1_CSF_protein_thr10_HVG9000_after_outlier_heatmap_CSV.zip)
+
 ## 포함된 범위
 
 - experiment records: 584
